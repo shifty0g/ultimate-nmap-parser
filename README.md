@@ -18,6 +18,9 @@ A handy script for parsing greppable nmap output.
 
 ## To Do
 
+* A single decent report function
+* Tidy the script up
+
 
 # Usage
 
@@ -57,8 +60,6 @@ Options:
 ---------------------------------------------------------------------------------------------
 
 **No options provided!**
-
-
 ```
 
 
