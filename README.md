@@ -1,10 +1,10 @@
 # nmap-parser
 
-**LATEST VERSION 0.6**
+**LATEST VERSION 0.7**
 
 My first script posted script to github.
 
-A handy script for parsing greppable nmap output.
+A handy script for parsing greppable nmap output. various ways to wrestle with nmap for 	
 
 
 
@@ -14,129 +14,60 @@ A handy script for parsing greppable nmap output.
 * Generate 3 types of reports
 * List unqiue ports
 * List hosts
-* Produces stats on hosts and ports
+* Produces stats on hosts, ports and services
 
 ## To Do
 
 * A single decent report function
 * Tidy the script up
-
+* nmap 2 csv
+* nmap 2 nessus
+* search / filter options
+* other cool stuff
+* list clear-text protocols
+* list services with versions like web, databases stuff that can be checkd for patching
 
 # Usage
 
 ```
-# ./nmap-parser.sh
+# ./nmap-parser.sh -f [greppable nmapfile] [options]
+
+```
 
 
-███╗   ██╗███╗   ███╗ █████╗ ██████╗       ██████╗  █████╗ ██████╗ ███████╗███████╗██████╗
-████╗  ██║████╗ ████║██╔══██╗██╔══██╗      ██╔══██╗██╔══██╗██╔══██╗██╔════╝██╔════╝██╔══██╗
-██╔██╗ ██║██╔████╔██║███████║██████╔╝█████╗██████╔╝███████║██████╔╝███████╗█████╗  ██████╔╝
-██║╚██╗██║██║╚██╔╝██║██╔══██║██╔═══╝ ╚════╝██╔═══╝ ██╔══██║██╔══██╗╚════██║██╔══╝  ██╔══██╗
-██║ ╚████║██║ ╚═╝ ██║██║  ██║██║           ██║     ██║  ██║██║  ██║███████║███████╗██║  ██║
-╚═╝  ╚═══╝╚═╝     ╚═╝╚═╝  ╚═╝╚═╝           ╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═╝
 
-Version: 0.6
+```
+./nmap-parser.sh 
+
+
+ ███╗   ██╗███╗   ███╗ █████╗ ██████╗       ██████╗  █████╗ ██████╗ ███████╗███████╗██████╗ 
+ ████╗  ██║████╗ ████║██╔══██╗██╔══██╗      ██╔══██╗██╔══██╗██╔══██╗██╔════╝██╔════╝██╔══██╗
+ ██╔██╗ ██║██╔████╔██║███████║██████╔╝█████╗██████╔╝███████║██████╔╝███████╗█████╗  ██████╔╝
+ ██║╚██╗██║██║╚██╔╝██║██╔══██║██╔═══╝ ╚════╝██╔═══╝ ██╔══██║██╔══██╗╚════██║██╔══╝  ██╔══██╗
+ ██║ ╚████║██║ ╚═╝ ██║██║  ██║██║           ██║     ██║  ██║██║  ██║███████║███████╗██║  ██║
+ ╚═╝  ╚═══╝╚═╝     ╚═╝╚═╝  ╚═╝╚═╝           ╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═╝
+
+Version: 0.7
 ---------------------------------------------------------------------------------------------
-
-Usage: ./nmap-parser.sh [options] [gnmap file]
- Run inside nmap output dir it will pickup *.gnamp
- If no file is specificed the script will look for *.gnmap in pwd
-
+ 
+Usage: ./nmap-parser.sh -f [gnmap file] [options] 
+  Run inside nmap output dir it will pickup *.gnamp
+  If no file is specificed the script will look for *.gnmap in pwd
+ 
 Options:  
- -help       Show this help message and exit
- -uphosts    List live hosts from an nmap PingScan
- -dnhosts    List dead hosts from an nmap PingScan
- -preport    Ping report from PingScan
- -report     Cleaned up report live hosts with open ports from nmap TCP and UDP
- -report2    Another report just looks different
- -report3    Another third report
- -au         Will list all uniqe hosts, ports and services that are alive and open
- -uports     Will list unique open ports from nmap TCP and UDP good to feed into Nessus
- -iplist     Will produce same outpout as nmap-parse
- -parsip     Will parse out a list of live IPS - parsip.pl
- -ipreport   List of alive ip and open port which can be piped into other tools, IP:PORT
- -stats      Will produce a little stat report, total open ports est.
+  -h    Show this help message and exit
+  -u    List live hosts from an nmap PingScan
+  -d    List dead hosts from an nmap PingScan
+  -p    Will list unique open ports from nmap TCP and UDP good to feed into Nessus
+  -s    Will produce a little stat report, total open ports est.
+  -ir   output IP:PORT - list of alive ip and open port which can be piped into other tools, 
+  -r   report prints IP:PROTOCOL:PORT:STATUS:SERVICE
+  -r1   report2 basic output from nmap Cleaned up report live hosts with open ports from nmap TCP and UDP
+  -r2   Will geberate a report  of live IPS - parsip.pl
+  -r3   another report testing
 
 ---------------------------------------------------------------------------------------------
-
+ 
 **No options provided!**
-```
 
-
-## Example output
-
-### nmap-parser.sh -uphosts
-```
-192.168.0.1
-192.168.0.10
-192.168.0.14
-192.168.0.4
-```
-
-### nmap-parser.sh -stats
-```
-File used: nmap_tcp_def_192.168.0.X.gnmap
----------------------
-Hosts Up           :  4
-Hosts Down         :  0
-Total Hosts        :  4
-----------------------
-Total Open Ports on Live Hosts:
----------------------
-1900,443,49152,53,80,902,912
----------------------
- 1900:    1
-  443:    1
-49152:    1
-   53:    1
-   80:    1
-  902:    1
-  912:    1
----------------------
-```
-
-### nmap-parser.sh -au
-```
-Unique hosts list
----------------------
-192.168.0.1
-192.168.0.10
-192.168.0.14
-192.168.0.4
-
-Unique open port list
----------------------
-1900,443,49152,53,80,902,912
-
-Unique services list
----------------------
-domain,http ssl|http,ssl|vmware-auth upnp,vmware-auth
-```
-
-### nmap-parser.sh -preport
-```
-File: nmap_tcp_def_192.168.0.X.gnmap
-
-[0]Dead Hosts:
----------------------
----------------------
-[4]Alive Hosts:
----------------------
-192.168.0.1
-192.168.0.10
-192.168.0.14
-192.168.0.4
----------------------
-```
-
-### nmap-parser.sh -parsip
-```
-192.168.0.1 [1900, 49152, 53, 80, ]
-192.168.0.10 [443, 902, 912, ]
-```
-
-
-### nmap-parser.sh -uports
-```
-1900,443,49152,53,80,902,912
 ```
