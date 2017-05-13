@@ -12,23 +12,20 @@ function UPhosts() {
 cat $nmapfile  2>/dev/null | grep "Up" | awk '{print $2}' | grep -v "Nmap" | sort --unique
 }
 #
-#
-#
 # DOWNhosts - this will out put the Down hosts from a ping scan
 function DOWNhosts() {
 cat $nmapfile  2>/dev/null | grep  "Down" |awk '{print $2}' | grep -v "Nmap" | sort --unique
 }
 #
-#
-#
-#
-#uniqeports - will print out the unique TCP and UDP ports form all xml files in dir
+# uniqeports - will print out the unique TCP and UDP ports form all xml files in dir
 function uniqeports() {
 cat $nmapfile | grep -o -P '.{0,10}/open/' | awk '{ print $2}' | cut -d /  -f 1 | sort --unique | paste -s -d, 2>&1
 }
 #
-#
-#
+# uniqueservices - prints the unqie ope port services found 
+function uniqeservices() {
+cat $nmapfile| grep -o -P '/open/.{20}' | cut -d /  -f 5 | sort --unique| paste -s -d", " 2>&1
+}
 #
 # ipandport - this will make a list of hosts with open ports IP:PORT
 function ipandport() {
@@ -60,12 +57,6 @@ for file in $(echo $nmapfile); do # will go through each .nmap file
     done # end hosts loop
 done
 }
-#
-#
-#
-
-#
-#
 #
 #
 # simple report from .gnmap
@@ -174,19 +165,15 @@ echo $portlist | grep -o $check  | wc -l | grep ":"
         printf "%5s:%5s\n" "$check" "$count"
 done # end ports loop
 echo -e "\e[00m---------------------" #clear colour
-
-
 echo ""
 echo -e "\e[01m\e[95mUnique Ports: " $(uniqeports | tr ',' '\n\r' | wc -l)
 echo -e "---------------------" #clear colour
 uniqeports
 echo -e "---------------------" #clear colour
-
-
 echo -e "\e[01;94m "
 echo "Unique Services:"
 echo "---------------------"
-cat $nmapfile| grep -o -P '/open/.{20}' | cut -d /  -f 5 | sort --unique| paste -s -d", " 2>&1
+uniqeservices
 }
 
 #
@@ -205,21 +192,21 @@ echo ""
 echo -e "\e[91mVersion: "$VERSION
 echo -e "\e[92m---------------------------------------------------------------------------------------------"
 echo -e "\e[36m "
-echo -e "\e[1mUsage: ./nmap-parser.sh -f [gnmap file] [options] \e[0m\e[36m"
-echo "  Run inside nmap output dir it will pickup *.gnamp"
-echo "  If no file is specificed the script will look for *.gnmap in pwd"
+echo -e "\e[1mUsage: 
+	./nmap-parser.sh -f [gnmap file] [options] \e[0m\e[36m"
 echo -e "\e[94m "
 echo -e "\e[1mOptions: \e[0m\e[94m "
 echo "  -h    Show this help message and exit" #done
-echo "  -u    List live hosts from an nmap PingScan" #done
-echo "  -d    List dead hosts from an nmap PingScan" #done
-echo "  -p    Will list unique open ports from nmap TCP and UDP good to feed into Nessus"
-echo "  -s    Will produce a little stat report, total open ports est." # needs fixing and tidying
-echo "  -ir   output IP:PORT - list of alive ip and open port which can be piped into other tools, " #done
-echo "  -r   report prints IP:PROTOCOL:PORT:STATUS:SERVICE"
-echo "  -r1   report2 basic output from nmap Cleaned up report live hosts with open ports from nmap TCP and UDP" # needs work
-echo "  -r2   Will geberate a report  of live IPS - parsip.pl" #needs fixing replication and showing hosts with nothing tidying
-echo "  -r3   another report testing" #needs fixing replication and showing hosts with nothing tidying
+echo "  -u    List Up hosts - ping" #done
+echo "  -d    List Down hosts - ping" #done
+echo "  -p    PORT1,PORT2,PORT3,.. - List Unique open ports "
+echo "  -v    SERVICE1,SERVICE2,SERVICE3,.. - List Unique services for open ports" #
+echo "  -s    Stats - Numbers on open ports, alive hosts est" # needs fixing and tidying
+echo "  -ir   IP:PORT - List alive hosts and ports (useful to pipe into other tools)" #done
+echo "  -r    IP:PROTOCOL:PORT:STATUS:SERVICE - List alive hosts, ports and ports" 
+echo "  -r1   Report - Basic clean report"
+echo "  -r2   Report - IP[PORT1,PORT2, ] - parsip.pl" #needs fixing replication and showing hosts with nothing tidying
+echo "  -r3   Report **TESTING**" #needs fixing replication and showing hosts with nothing tidying
 echo ""
 echo -e "\e[92m---------------------------------------------------------------------------------------------"
 echo -e "\e[00m " # clear colours
@@ -236,10 +223,6 @@ echo -e "\e[00m " # clear colours
 #
 # MAIN HERE
 
-
-
-
-
 nmapfile=$2
 launchargs=$3
 
@@ -249,6 +232,7 @@ case $launchargs in
 "-p") uniqeports;;
 "-r1") report;;
 "-r") report2;;
+"-v") uniqeservices;;
 "-r2") report4;;
 "-r3") parsip;;
 "-au") allunique;;
@@ -271,5 +255,6 @@ export -f DOWNhosts
 export -f report
 export -f stats
 export -f ipandport
+export -f uniqeservices
 export file
 export nmapfile
