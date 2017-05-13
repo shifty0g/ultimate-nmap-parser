@@ -153,17 +153,25 @@ echo -e "\e[00;31m\033[1mDead Hosts:    $(DOWNhosts | wc -l)"
 echo -e "\e[00;31m\033[1m---------------------"
 DOWNhosts
 echo -e "\e[00;31m\033[1m---------------------"
-
-
 portlist=$(cat $nmapfile | grep -o -P '.{0,10}/open/' | awk '{ print $2}' | cut -d /  -f 1 | paste -s -d, 2>&1 | tr ',' '\n')
 echo -e "\e[01m\e[00m"
+
+
 echo "Total Open ports: " $(cat $nmapfile | grep -o -P '.{0,10}/open/' | awk '{ print $2}' | cut -d /  -f 1 | paste -s -d, 2>&1 | tr ',' '\n\r' |  wc -l)
 echo -e "---------------------" #clear colour
 for check in $(echo $portlist); do # go through ports
+totalports=0
 echo $portlist | grep -o $check  | wc -l | grep ":"
         count=$(echo $portlist | grep -o $check  | wc -l )
-        printf "%5s:%5s\n" "$check" "$count"
+        printf "%5s : $count \n" "$check" >> port22
 done # end ports loop
+cat port22 | cut -d :  -f 2 | cut -d' '  -f2
+
+
+
+cat port22
+rm port22
+
 echo -e "\e[00m---------------------" #clear colour
 echo ""
 echo -e "\e[01m\e[95mUnique Ports: " $(uniqeports | tr ',' '\n\r' | wc -l)
@@ -182,6 +190,8 @@ uniqeservices
 # help - help options
 function help () {
 #clear # because you have to have some ascii
+echo ""
+echo ""
 echo -e "\e[34m ███╗   ██╗███╗   ███╗ █████╗ ██████╗       ██████╗  █████╗ ██████╗ ███████╗███████╗██████╗ "
 echo -e "\e[31m ████╗  ██║████╗ ████║██╔══██╗██╔══██╗      ██╔══██╗██╔══██╗██╔══██╗██╔════╝██╔════╝██╔══██╗"
 echo -e "\e[32m ██╔██╗ ██║██╔████╔██║███████║██████╔╝█████╗██████╔╝███████║██████╔╝███████╗█████╗  ██████╔╝"
@@ -193,12 +203,12 @@ echo -e "\e[91mVersion: "$VERSION
 echo -e "\e[92m---------------------------------------------------------------------------------------------"
 echo -e "\e[36m "
 echo -e "\e[1mUsage: 
-	./nmap-parser.sh -f [gnmap file] [options] \e[0m\e[36m"
+    ./nmap-parser.sh -f [gnmap file] [options] \e[0m\e[36m"
 echo -e "\e[94m "
 echo -e "\e[1mOptions: \e[0m\e[94m "
 echo "  -h    Show this help message and exit" #done
-echo "  -u    List Up hosts - ping" #done
-echo "  -d    List Down hosts - ping" #done
+echo "  -u    IP - List up hosts - ping" #done
+echo "  -d    IP - List down hosts - ping" #done
 echo "  -p    PORT1,PORT2,PORT3,.. - List Unique open ports "
 echo "  -v    SERVICE1,SERVICE2,SERVICE3,.. - List Unique services for open ports" #
 echo "  -s    Stats - Numbers on open ports, alive hosts est" # needs fixing and tidying
