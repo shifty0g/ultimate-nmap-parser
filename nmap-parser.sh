@@ -80,11 +80,12 @@ for host in $(cat $nmapfile | grep "Host:" | grep "open" | awk '{ print $2}'| so
                 type=$(cat $nmapfile | grep -w $host | grep -o -P $port.{30} | cut -d , -f1 | cut -d / -f3 | sort --uniqu)
                 proto=$(cat $nmapfile | grep -w $host | grep -o -P $port.{30} | cut -d , -f1 | cut -d / -f5 | sort --uniqu)
                 srv=$(cat $nmapfile | grep -w $host | grep -o -P $port.* | cut -d, -f1 | cut -d/ -f7 | sort --uniqu)
-                echo $host":"$port":"$proto":"$srv | uniq | grep -v Nmap | grep : >> ipandportlist
+                echo $host":"$port":"$type":"$proto":"$status":"$srv | uniq | grep -v Nmap | grep : >> ipandportlist
                 #port_$port 2> /dev/null
-                echo $host":"$type":"$port":"$proto":"$status":"$srv
+                echo $host":"$port":"$type":"$proto":"$status":"$srv
         done # end ports loop
     done # end hosts loop
+rm ipandportlist
 }
 # this will be report with extra options
 function report4 () {
@@ -213,7 +214,7 @@ echo "  -p    PORT1,PORT2,PORT3,.. - List Unique open ports "
 echo "  -v    SERVICE1,SERVICE2,SERVICE3,.. - List Unique services for open ports" #
 echo "  -s    Stats - Numbers on open ports, alive hosts est" # needs fixing and tidying
 echo "  -ir   IP:PORT - List alive hosts and ports (useful to pipe into other tools)" #done
-echo "  -r    IP:PROTOCOL:PORT:STATUS:SERVICE - List alive hosts, ports and ports" 
+echo "  -r    IP:PORT:PROTOCOL:STATUS:SERVICE - List alive hosts, ports and ports" 
 echo "  -r1   Report - Basic clean report"
 echo "  -r2   Report - IP[PORT1,PORT2, ] - parsip.pl" #needs fixing replication and showing hosts with nothing tidying
 echo "  -r3   Report **TESTING**" #needs fixing replication and showing hosts with nothing tidying
