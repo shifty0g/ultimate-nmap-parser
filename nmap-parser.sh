@@ -1,7 +1,7 @@
 #!/bin/bash
 # my first script which go out of hand
 # nmap parser functions
-VERSION="0.7" #13-05-17
+VERSION="0.8" #24-07-17
 # A collectiong of functions that parse nmap output degined to help and be useful to a pentester. works with *.gnmap files
 #
 #
