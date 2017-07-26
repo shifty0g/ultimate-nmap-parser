@@ -1,7 +1,7 @@
 #!/bin/bash
 # my first script which go out of hand
 # nmap parser functions
-VERSION="0.8" #24-07-17
+VERSION="0.9" #26-07-17
 # A collectiong of functions that parse nmap output degined to help and be useful to a pentester. works with *.gnmap files
 #
 #
@@ -73,6 +73,37 @@ echo -e "$r"
 #
 
 
+function rep1() {
+# hard coded and dirty to pick
+cat nmap*.gnmap >> allports
+
+for host in $(cat allports | grep "Host:" | grep "open" | awk '{ print $2}'| sort --unique); do # will go through each host
+        for port in $(cat allports | grep -w $host | grep -o -P '.{0,10}/open/' | awk '{ print $2}' | cut -d /  -f 1 | sort --unique); do # go through ports
+                status=$(cat allports | grep -w $host | grep -o -P $port.{30} | cut -d , -f1 | cut -d / -f2 | sort --uniqu)
+                type=$(cat allports | grep -w $host | grep -o -P $port.{30} | cut -d , -f1 | cut -d / -f3 | sort --uniqu)
+                proto=$(cat allports | grep -w $host | grep -o -P $port.{30} | cut -d , -f1 | cut -d / -f5 | sort --uniqu)
+                srv=$(cat allports | grep -w $host | grep -o -P $port.* | cut -d, -f1 | cut -d/ -f7 | sort --uniqu)
+                echo $host":"$port":"$type":"$proto":"$status":"$srv | uniq | grep -v Nmap | grep : >> ipandportlist
+                #port_$port 2> /dev/null
+                echo $host":"$port":"$type":"$proto":"$status":"$srv
+        done # end ports loop
+        echo ""
+    done # end hosts loop
+    
+    
+    
+# clean up
+rm ipandportlist
+rm allports
+
+# end
+}
+#
+#
+#
+#
+#
+#
 function report2 () {
 for host in $(cat $nmapfile | grep "Host:" | grep "open" | awk '{ print $2}'| sort --unique); do # will go through each host
         for port in $(cat $nmapfile | grep -w $host | grep -o -P '.{0,10}/open/' | awk '{ print $2}' | cut -d /  -f 1 | sort --unique); do # go through ports
@@ -218,6 +249,7 @@ echo "  -r    IP:PORT:PROTOCOL:STATUS:SERVICE - List alive hosts, ports and port
 echo "  -r1   Report - Basic clean report"
 echo "  -r2   Report - IP[PORT1,PORT2, ] - parsip.pl" #needs fixing replication and showing hosts with nothing tidying
 echo "  -r3   Report **TESTING**" #needs fixing replication and showing hosts with nothing tidying
+#nmap-parser null null -rep1  = secret command for me . need to implament further
 echo ""
 echo -e "\e[92m---------------------------------------------------------------------------------------------"
 echo -e "\e[00m " # clear colours
@@ -250,6 +282,7 @@ case $launchargs in
 "-ir") ipandport;;
 "-s") stats;;
 "-h") help;;
+"-rep1") rep1;;
 *) help
     echo "**No options provided!**"  ;;
 esac
@@ -267,6 +300,7 @@ export -f report
 export -f stats
 export -f ipandport
 export -f uniqeservices
+export -f rep1
 export file
 export nmapfile
 #
