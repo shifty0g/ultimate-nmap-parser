@@ -1,6 +1,6 @@
 # nmap-parser
 
-**LATEST VERSION 0.7**
+**LATEST VERSION 0.9**
 
 My first script posted script to github (:
 
@@ -22,7 +22,7 @@ A handy script thats becomming a swiss army knife for dealing with greppable nma
 * Tidy the script up
 * Start and finish time in stats
 * nmap 2 csv
-* nmap 2 nessus
+* nmap 2 nessusfile
 * search / filter options
 * other cool stuff
 * list clear-text protocols
