@@ -1,24 +1,4 @@
-
-               █    ██  ██▓  ▄▄▄█████▓ ██▓ ███▄ ▄███▓ ▄▄▄     ▄▄▄█████▓▓█████                           
-               ██  ▓██▒▓██▒  ▓  ██▒ ▓▒▓██▒▓██▒▀█▀ ██▒▒████▄   ▓  ██▒ ▓▒▓█   ▀                           
-              ▓██  ▒██░▒██░  ▒ ▓██░ ▒░▒██▒▓██    ▓██░▒██  ▀█▄ ▒ ▓██░ ▒░▒███                             
-              ▓▓█  ░██░▒██░  ░ ▓██▓ ░ ░██░▒██    ▒██ ░██▄▄▄▄██░ ▓██▓ ░ ▒▓█  ▄                           
-              ▒▒█████▓ ░██████▒▒██▒ ░ ░██░▒██▒   ░██▒ ▓█   ▓██▒ ▒██▒ ░ ░▒████▒                          
-              ░▒▓▒ ▒ ▒ ░ ▒░▓  ░▒ ░░   ░▓  ░ ▒░   ░  ░ ▒▒   ▓▒█░ ▒ ░░   ░░ ▒░ ░                          
-              ░░▒░ ░ ░ ░ ░ ▒  ░  ░     ▒ ░░  ░      ░  ▒   ▒▒ ░   ░     ░ ░  ░                          
-               ░░░ ░ ░   ░ ░   ░       ▒ ░░      ░     ░   ▒    ░         ░                             
-                 ░         ░  ░        ░         ░         ░  ░           ░  ░                          
-                                                                                                   
-  ███▄    █  ███▄ ▄███▓ ▄▄▄       ██▓███         ██▓███   ▄▄▄       ██▀███    ██████ ▓█████  ██▀███   
-  ██ ▀█   █ ▓██▒▀█▀ ██▒▒████▄    ▓██░  ██▒      ▓██░  ██▒▒████▄    ▓██ ▒ ██▒▒██    ▒ ▓█   ▀ ▓██ ▒ ██▒ 
- ▓██  ▀█ ██▒▓██    ▓██░▒██  ▀█▄  ▓██░ ██▓▒      ▓██░ ██▓▒▒██  ▀█▄  ▓██ ░▄█ ▒░ ▓██▄   ▒███   ▓██ ░▄█ ▒ 
- ▓██▒  ▐▌██▒▒██    ▒██ ░██▄▄▄▄██ ▒██▄█▓▒ ▒      ▒██▄█▓▒ ▒░██▄▄▄▄██ ▒██▀▀█▄    ▒   ██▒▒▓█  ▄ ▒██▀▀█▄   
- ▒██░   ▓██░▒██▒   ░██▒ ▓█   ▓██▒▒██▒ ░  ░      ▒██▒ ░  ░ ▓█   ▓██▒░██▓ ▒██▒▒██████▒▒░▒████▒░██▓ ▒██▒ 
- ░ ▒░   ▒ ▒ ░ ▒░   ░  ░ ▒▒   ▓▒█░▒▓▒░ ░  ░      ▒▓▒░ ░  ░ ▒▒   ▓▒█░░ ▒▓ ░▒▓░▒ ▒▓▒ ▒ ░░░ ▒░ ░░ ▒▓ ░▒▓░ 
- ░ ░░   ░ ▒░░  ░      ░  ▒   ▒▒ ░░▒ ░           ░▒ ░       ▒   ▒▒ ░  ░▒ ░ ▒░░ ░▒  ░ ░ ░ ░  ░  ░▒ ░ ▒░ 
-    ░   ░ ░ ░      ░     ░   ▒   ░░             ░░         ░   ▒     ░░   ░ ░  ░  ░     ░     ░░   ░  
-          ░        ░         ░  ░                           ░  ░   ░           ░     ░  ░   ░      
-
+# Ultimate Nmap Parser 
 
 **VERSION 0.5**
 
@@ -67,4 +47,69 @@ chmod +x ultimate-nmap-parser.sh
 # ./ultimate-nmap-parser.sh [input] [options]
 
 ```
+
+## Example
+
+```
+#ultimate-nmap-parser.sh --help
+-----------------------------------------------------------------------------------------------------------
+
+               █    ██  ██▓  ▄▄▄█████▓ ██▓ ███▄ ▄███▓ ▄▄▄     ▄▄▄█████▓▓█████                                   
+               ██  ▓██▒▓██▒  ▓  ██▒ ▓▒▓██▒▓██▒▀█▀ ██▒▒████▄   ▓  ██▒ ▓▒▓█   ▀                                   
+              ▓██  ▒██░▒██░  ▒ ▓██░ ▒░▒██▒▓██    ▓██░▒██  ▀█▄ ▒ ▓██░ ▒░▒███                                     
+              ▓▓█  ░██░▒██░  ░ ▓██▓ ░ ░██░▒██    ▒██ ░██▄▄▄▄██░ ▓██▓ ░ ▒▓█  ▄                                   
+              ▒▒█████▓ ░██████▒▒██▒ ░ ░██░▒██▒   ░██▒ ▓█   ▓██▒ ▒██▒ ░ ░▒████▒                                  
+              ░▒▓▒ ▒ ▒ ░ ▒░▓  ░▒ ░░   ░▓  ░ ▒░   ░  ░ ▒▒   ▓▒█░ ▒ ░░   ░░ ▒░ ░                                  
+              ░░▒░ ░ ░ ░ ░ ▒  ░  ░     ▒ ░░  ░      ░  ▒   ▒▒ ░   ░     ░ ░  ░                                  
+               ░░░ ░ ░   ░ ░   ░       ▒ ░░      ░     ░   ▒    ░         ░                                     
+                 ░         ░  ░        ░         ░         ░  ░           ░  ░                                  
+                                                                                                   
+  ███▄    █  ███▄ ▄███▓ ▄▄▄       ██▓███         ██▓███   ▄▄▄       ██▀███    ██████ ▓█████  ██▀███   
+  ██ ▀█   █ ▓██▒▀█▀ ██▒▒████▄    ▓██░  ██▒      ▓██░  ██▒▒████▄    ▓██ ▒ ██▒▒██    ▒ ▓█   ▀ ▓██ ▒ ██▒ 
+ ▓██  ▀█ ██▒▓██    ▓██░▒██  ▀█▄  ▓██░ ██▓▒      ▓██░ ██▓▒▒██  ▀█▄  ▓██ ░▄█ ▒░ ▓██▄   ▒███   ▓██ ░▄█ ▒ 
+ ▓██▒  ▐▌██▒▒██    ▒██ ░██▄▄▄▄██ ▒██▄█▓▒ ▒      ▒██▄█▓▒ ▒░██▄▄▄▄██ ▒██▀▀█▄    ▒   ██▒▒▓█  ▄ ▒██▀▀█▄   
+ ▒██░   ▓██░▒██▒   ░██▒ ▓█   ▓██▒▒██▒ ░  ░      ▒██▒ ░  ░ ▓█   ▓██▒░██▓ ▒██▒▒██████▒▒░▒████▒░██▓ ▒██▒ 
+ ░ ▒░   ▒ ▒ ░ ▒░   ░  ░ ▒▒   ▓▒█░▒▓▒░ ░  ░      ▒▓▒░ ░  ░ ▒▒   ▓▒█░░ ▒▓ ░▒▓░▒ ▒▓▒ ▒ ░░░ ▒░ ░░ ▒▓ ░▒▓░ 
+ ░ ░░   ░ ▒░░  ░      ░  ▒   ▒▒ ░░▒ ░           ░▒ ░       ▒   ▒▒ ░  ░▒ ░ ▒░░ ░▒  ░ ░ ░ ░  ░  ░▒ ░ ▒░ 
+    ░   ░ ░ ░      ░     ░   ▒   ░░             ░░         ░   ▒     ░░   ░ ░  ░  ░     ░     ░░   ░  
+          ░        ░         ░  ░                           ░  ░   ░           ░     ░  ░   ░      
+
+Version: 0.5 - 04/04/2019 	Created By: Shifty0g 	https://github.com/shifty0g  	
+-----------------------------------------------------------------------------------------------------------
+
+[*] Usage: ultimate-nmap-parser.sh [input] [options]
+
+[input]:		Grepable nmap file(s) .gnmap - can have multiple
+
+[options]:
+
+	--help		Show this help menu
+	--all		Runs ALL options - EXCLUDING: report1
+	--csv		Create .csv file - parsed_nmap.csv
+	--summary	Create host Summary report - summary.txt
+	--closed	Create Summary of hosts with CLOSED ports - closed-summary.txt
+  	--report1   	Report - IP[PORT1,PORT2,PORT3, ] - parsip.pl
+	--unique	Parse open unique TCP & UDP ports - ports_unique.txt
+	--tcp		Parse open TCP ports - ports_tcp.txt
+	--udp		Parse open UDP ports - ports_udp.txt
+	--up		Parse 'Up' hosts - hosts_up.txt
+	--down		Parse 'Down' hosts - hosts_down.txt
+	--ippport	Parse targets IP:PORT - parsed_ipport.txt
+	--smb		Generate smb paths smb://IP - smb.txt
+	--web		Generate web URLS http://IP:PORT https://IP:PORT  - web-urls.txt
+	--ssl		Generate ssl/tls hosts list IP:PORT - ssl.txt
+	--hostports	Generate hosts/hosts_<PORT>-<PROTOCOL>-<SERVICE>.txt files
+
+[*] Example:
+
+ultimate-nmap-parser.sh *.gnmap --all
+ultimate-nmap-parser.sh nmap_tcp_full.gnmp nmap_udp_def.gnmap --summary --unique
+ultimate-nmap-parser.sh nmap_tcp_full.gnmp nmap_udp_def.gnmap --web
+
+-----------------------------------------------------------------------------------------------------------
+
+```
+
+
+
 
