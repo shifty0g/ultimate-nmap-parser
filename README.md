@@ -8,12 +8,10 @@ This is still in BETA - mileage may vary
 
 So i rewrote the old script that was taking this sport.
 
-This is aimed at being the only script you need to parse .gnmap files to use with other tools such as Nessus, Nikto, SSLScan, Enum4Linux etc...
+The only script you will need to parse .gnmap files. The output can be used with other tools such as Nessus, Nikto, SSLScan, Enum4Linux etc...
 This will build up and improve overtime with new features as I require it.
 
-
-My first scrip released on github (:
-
+My first script released on github (:
 
 
 
