@@ -29,7 +29,7 @@ My first script released on github (:
 
 ## Installation
 
-Clone the git and pretty much it 
+Clone the git and you pretty much ready to roll
 
 ```
 git clone https://github.com/Shifty0g/ultimate-nmap-parser/
