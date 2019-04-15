@@ -1,12 +1,23 @@
 #!/bin/bash
 fname="ultimate-nmap-parser.sh"
-version="0.5"
-modified="04/04/2019"
-
+version="0.5.2"
+modified="15/04/2019"
 
 # TO DO:
 #
-# - better checks for Up/Down hosts
+# - 1. check if tcp,udp,unique,up and down files are empty - if empty then say 
+# - 2. more check of input file and exit if cant find open it. if no inputfile - exit
+# - 3. better checks for Up/Down hosts
+# - make the output echo out each host file 
+# - lots more work needed on the output bit at the end  maybe use the ifs
+# - make like a log file - time stats. input swtichees used files es.. all stats ports est
+# - fix the output at the end 
+# - better error handling 
+# - need to check if there is nothing in the file then delete it and sate no hosts
+# - output stating what files been picked up ...list them out ?
+# - fix and check ssl function
+# - closed ports needs sorting 
+# - sort the port files - tcp, udp, unique
 # - have a bit at the end to print the output of files
 # - use less temp files try and keep things consistant in oneliner
 # - tidy up the script make it organised
@@ -19,10 +30,7 @@ modified="04/04/2019"
 # - add useful features from OLD nmap-parser
 # - change the if statements so that there is an all function so it will set all the varibles on and create the folder. this needs testing too 
 # - TEST TEST TEST TEST TEST and check the output with lots of different scans and make sure it is all accurate. 
-#
-
-
-
+# - more testing .... different sets of files ips est to see 
 
 
 
@@ -37,7 +45,7 @@ export sortip="sort -V"
 
 
 #output folder 
-createoutdir="N"	#Turn ON if you always want kdir outdir
+createoutdir="N"	#change to Y - if you always want mkdir outdir
 outdir="parse"
 outhostsdir="hosts"
 
@@ -205,13 +213,14 @@ if [ -f ${outpath}"temp.csv" ]; then
    echo "HOST,PORT,STATUS,PROTOCOL,SERVICE,VERSION" > ${outpath}$outputcsvfile 
    # sort by ip address - 1st.2nd.3rd.4th
    cat ${outpath}"temp.csv" | sort -t"," -n -k1 | $sortip >> ${outpath}$outputcsvfile 
+   echo "	- $outputcsvfile"
 fi
 
 #cleanup 
 rm ${outpath}"temp.csv" ${outpath}"tempfile2" > /dev/null 2>&1
 
-echo "	- $outputcsvfile"
 echo
+#end
 }
 
 function checkcsv () {
@@ -231,6 +240,8 @@ sed -i -e "1d" ${outpath}"tempinput"
 sed -i '/,closed,/d' ${outpath}"tempinput"
 
 export tempfile=$(realpath ${outpath}"tempinput")
+
+# end
 }
 
 function summary () {
@@ -242,7 +253,6 @@ checkcsv
 
 #clear any old file - fresh
 rm ${outpath}$outputsummaryfile > /dev/null 2>&1
-
 
 echo "+=========================================================================================+" >> ${outpath}$outputsummaryfile
 printf "%-18s %-16s %-52.52s %-2s \n" "| HOST " "| PORT / PROTOCOL" " | SERVICE" "|" >> ${outpath}$outputsummaryfile
@@ -264,12 +274,13 @@ while read line; do
 done < $tempfile
 echo "+=========================================================================================+" >> ${outpath}$outputsummaryfile
 
+echo "	- $outputsummaryfile"
+echo
+
 #cleanup
 rm  $tempfile > /dev/null 2>&1
 
-
-echo "	- $outputsummaryfile"
-echo
+#end
 }
 
 function ipport () {
@@ -288,57 +299,121 @@ cat $tempfile  | cut -d, -f1,2 | tr -d '"' | tr , : | $sortip > ${outpath}$outpu
 #cleanup
 rm  $tempfile > /dev/null 2>&1
 
-
 echo "	- $outputipfile"
 echo
+
+#end
 }
 
 function uphosts () {
 # creates a file with IPs for hosts with Up Statues - needs further checks to be better 
 echo -e "\e[1m\e[93m[>]\e[0m Parsing up hosts"
 cat $inputfilepath | grep 'Status: Up' | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b" | sort -u | $sortip  > ${outpath}$outputupfile 
-echo "	- $outputupfile"
+
+# check if there are actually any IP addresses in the file - if not delete it no point 
+if [ -z "$(cat ${outpath}$outputupfile | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b")" ]
+then
+      echo "	- no up hosts"
+	  rm ${outpath}$outputupfile > /dev/null 2>&1
+else
+      echo "	- $outputupfile"
+fi
 echo
+
+
+#end
 }
 
 function downhosts () {
 # creates a file with IPs for hosts with Down status 
 echo -e "\e[1m\e[93m[>]\e[0m Parsing down hosts"
 cat $inputfilepath | grep 'Status: Down' | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b" | sort -u | $sortip > ${outpath}$outputdownfile
-echo "	- $outputdownfile"
+
+# check if there are actually any IP addresses in the file - if not delete it no point 
+if [ -z "$(cat ${outpath}$outputdownfile | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b")" ]
+then
+      echo "	- no down hosts"
+	  rm ${outpath}$outputdownfile > /dev/null 2>&1
+else
+      echo "	- $outputdownfile"
+fi
 echo
+
+#end
 }
 
 function uniqueports () {
 # creates a file listing out uniquie open TCP and UDP ports
 echo -e "\e[1m\e[93m[>]\e[0m Parsing unique ports"
 cat $inputfilepath | grep -o -P '.{0,9}/open/' | awk '{ print $2}' | cut -d /  -f 1 | sort -u | paste -s -d, 2>&1 > ${outpath}$outputuniquefile; 
-echo "	- $outputuniquefile"
+
+# check for a number if the file has them then likely has ports in  
+if [ -z "$(cat ${outpath}$outputuniquefile | grep '[0-9]')" ]
+then
+      echo "	- no Unique ports"
+	  rm ${outpath}$outputuniquefile > /dev/null 2>&1
+else
+      echo "	- $outputuniquefile"
+fi
 echo
+
+# end 
 }
 
 function tcpports () {
 # creates a file of unqiue open TCP ports - 22,23,80,443...
 echo -e "\e[1m\e[93m[>]\e[0m Parsing tcp ports"
 cat $inputfilepath | grep '/tcp/' | grep -o -P '.{0,9}/open/' | awk '{ print $2}' | cut -d /  -f 1 | sort --unique | paste -s -d, 2>&1 > ${outpath}$outputtcpfile;
-echo "	- $outputtcpfile"
+
+# check for a number if the file has them then likely has ports in  
+if [ -z "$(cat ${outpath}$outputtcpfile |  grep '[0-9]')" ]
+then
+      echo "	- no TCP ports"
+	  rm ${outpath}$outputtcpfile > /dev/null 2>&1
+else
+      echo "	- $outputtcpfile"
+fi
 echo
+
+
+# end  
 }
 
 function udpports () {
 # creates a file of unqiue open UDP ports - 53,161...
 echo -e "\e[1m\e[93m[>]\e[0m Parsing udp ports"
 cat $inputfilepath | grep '/udp/'  | grep -o -P '.{0,9}/open/' | awk '{ print $2}' | cut -d /  -f 1 | sort --unique | paste -s -d, 2>&1 > ${outpath}$outputudpfile
-echo "	- $outputudpfile"
+
+# check for a number if the file has them then likely has ports in  
+if [ -z "$(cat ${outpath}$outputudpfile | grep '[0-9]')" ]
+then
+      echo "	- no UDP ports"
+	  rm ${outpath}$outputudpfile > /dev/null 2>&1
+else
+      echo "	- $outputudpfile"
+fi
 echo
+
+# end 
 }
 
 function smb () {
 # createa file for URI smb://192.168.1.1 
+# will only grab out OPEN 445 TCP 
 echo -e "\e[1m\e[93m[>]\e[0m Creating smb paths"
-cat $inputfilepath | grep '445/open' | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b" | sed -e 's/^/smb:\/\//' | sort -u | $sortip | sort -t'/' -k2 -V  > ${outpath}$outputsmbfile
-echo "	- $outputsmbfile"
+cat $inputfilepath | grep '445/open/tcp/' | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b" | sed -e 's/^/smb:\/\//' | sort -u | $sortip | sort -t'/' -k2 -V  > ${outpath}$outputsmbfile
+
+# check for a smb:// if the file has them then likely has ports in  
+if [ -z "$(cat ${outpath}$outputsmbfile | grep 'smb://')" ]
+then
+      echo "	- no UDP ports"
+	  rm ${outpath}$outputsmbfile > /dev/null 2>&1
+else
+      echo "	- $outputsmbfile"
+fi
 echo
+
+# end 
 }
 
 function web () {
@@ -363,19 +438,26 @@ for line in $(cat $tempfile); do
     if [ "$port" = "8080" ]; then echo "http://${host}:8080/" >> ${outpath}webtemp2; fi
     if [ "$port" = "8443" ]; then echo "https://${host}:8443/" >> ${outpath}webtemp2; fi
 	if [ "$service" = "http" ]; then echo "http://${host}:$port/" >> ${outpath}webtemp2; fi
-	if [ "$service" = "ssl|http" ]; then echo "https://${host}:$port/" >> ${outpath}webtemp2; fi
+	if [ "$service" = "ssl" ]; then echo "https://${host}:$port/" >> ${outpath}webtemp2; fi
 	if [ "$version" = "*Web*" ]; then echo "http://${host}:$port/" >> ${outpath}webtemp2; fi
 	if [ "$version" = "*web*" ]; then echo "http://${host}:$port/" >> ${outpath}webtemp2; fi
 done
 
-#sort by IP
-sort -u ${outpath}webtemp2 | $sortip | sort -t'/' -k2 -V  > ${outpath}$outputwebfile 
+# if webtemp2 exists then sort it 
+if [ -f ${outpath}webtemp2 ]; then
+	sort -u ${outpath}webtemp2 | $sortip | sort -t'/' -k2 -V  > ${outpath}$outputwebfile 2>&1
+	echo "	- $outputwebfile"
+else
+	echo "	- no ports found"
+	rm ${outpath}$outputwebfile > /dev/null 2>&1
+fi
 
 #cleanup
 rm ${outpath}webtemp2 $tempfile  > /dev/null 2>&1
 
-echo "	- $outputwebfile"
 echo
+
+#end
 }
 
 function ssl () {
@@ -401,14 +483,23 @@ for line in $(cat $tempfile); do
 	if [ "$version" = "*tls*" ]; then echo "${host}:$port" >> ${outpath}ssltemp2; fi
 done
 
-#sort by IP
-sort -u ${outpath}ssltemp2 | $sortip > ${outpath}$outputsslfile 
+
+# if webtemp2 exists then sort it 
+if [ -f ${outpath}ssltemp2 ]; then
+	sort -u ${outpath}ssltemp2 | $sortip > ${outpath}$outputsslfile 2>&1
+	echo "	- $outputsslfile"
+else
+	echo "	- no ports found"
+	rm ${outpath}$outputsslfile > /dev/null 2>&1
+fi
+
 
 #clean up function
 rm ${outpath}ssltemp ${outpath}ssltemp2 $tempfile > /dev/null 2>&1
 
-echo "	- $outputsslfile"
 echo
+
+#end
 }
 
 function hostports () {
@@ -436,12 +527,14 @@ for line in $(cat $tempfile); do
     echo $host >> $hostportspath"/hosts_"$port-$proto-$service.txt
 done
 
+
 #function cleanup
 rm  ${hostportspath}/hosts_--.txt $tempfile > /dev/null 2>&1
 
 
-echo "	- "$hostportsfolder"/hosts_*.txt"
+echo "	- "${hostportspath}"hosts_[PORT]-[PROTOCOL]-[SERVICE].txt"
 echo
+#end
 }
 
 function closedsummary() {
@@ -463,6 +556,8 @@ done # end hosts loop
 
 echo "	- "$outputclosedsummaryfile
 echo
+
+#end
 }
 
 function report1() {
@@ -482,9 +577,10 @@ for host in $(cat $inputfilepath | grep "Host:" | grep "\/open\/" | awk '{ print
 done # end hosts loop
 cat ${outpath}"reportemp" | $sortip | grep -v "\[\]"  >  ${outpath}$outputreport1file
 
-
 echo "	- "$outputreport1file
 echo
+
+#end
 }
 
 
@@ -621,10 +717,7 @@ then
 	  exit  
 fi
 
-
-
-
-                                         
+                                        
 header
 echo 
 
@@ -664,9 +757,6 @@ if [ "$men_report1" == "Y" ]; then report1; fi
 rm ${outpath}"tempinput" ${outpath}"ipptemp" ${outpath}"closedtemp" ${outpath}"summtemp"  ${outpath}"tempfile" ${outpath}$varTempFile2 ${outpath}"inputfile" ${outpath}$varTempFile ${outpath}$tempfile ${outpath}$varSummTempFile ${outpath}"webtemp" ${outpath}"webtemp2" ${hostportspath}"hostptemp" > /dev/null 2>&1
 
 
-
-
-
 # print footer once completed 
 footer
 
@@ -677,8 +767,26 @@ read -p "[-] Display Output? <ENTER = YES / anything else = NO> : " prompt
 echo
 if [ -z "$prompt" ]
 then
-	more ${outpath}*.txt
-	if [ "$men_hostports" == "Y" ]; then  more ${hostportspath}"/hosts_"*.txt; fi
+	if [ $men_all == "Y" ]
+	then
+		more ${outpath}*.txt
+		more ${hostportspath}"/hosts_"*.txt
+	else
+		if [ "$men_csv" == "Y" ]; then cat ${outpath}$outputcsvfile 2> /dev/null; fi
+		if [ "$men_summary" == "Y" ]; then cat ${outpath}$outputsummaryfile 2> /dev/null; fi
+		if [ "$men_ipport" == "Y" ]; then cat ${outpath}$outputipfile 2> /dev/null; fi
+		if [ "$men_uports" == "Y" ]; then cat ${outpath}$outputuniquefile 2> /dev/null; fi
+		if [ "$men_tcpports" == "Y" ]; then	cat ${outpath}$outputtcpfile 2> /dev/null; fi
+		if [ "$men_udpports" == "Y" ]; then	cat ${outpath}$outputudpfile 2> /dev/null; fi
+		if [ "$men_uphosts" == "Y" ]; then cat ${outpath}$outputupfile 2> /dev/null; fi
+		if [ "$men_downhosts" == "Y" ]; then cat ${outpath}$outputdownfile; fi
+		if [ "$men_smb" == "Y" ]; then cat ${outpath}$outputsmbfile 2> /dev/null; fi
+		if [ "$men_web" == "Y" ]; then cat ${outpath}$outputwebfile 2> /dev/null; fi
+		if [ "$men_ssl" == "Y" ]; then cat ${outpath}$outputsslfile 2> /dev/null; fi
+		if [ "$men_closed" == "Y" ]; then cat ${outpath}$outputclosedsummaryfile 2> /dev/null; fi
+		if [ "$men_report1" == "Y" ]; then cat ${outpath}$outputreport1file 2> /dev/null; fi
+		if [ "$men_hostports" == "Y" ]; then  more ${hostportspath}"/hosts_"*.txt 2> /dev/null; fi
+	fi
 fi
 
 # remove comment to enable diagnostics function
