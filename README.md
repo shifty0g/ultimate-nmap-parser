@@ -18,12 +18,12 @@ My first script released on github (:
 ## Features
 * Parse out IP addresses of hosts that are Up/Down
 * Generate .csv file
-* Generate a summary of open ports 
+* Generate a summary report of open ports 
 * Parse out TCP,UDP and Unqiue ports
-* Generate URL list from open web ports
+* Generate URL list from open web ports - https://192.168.2.11:443
 * Generate a list of SMB connections - SMB://X.X.X.X
-* Generate a list of IP addresses 
-* Parse out a list of IP:PORT
+* Generate a list of SSL ports.
+* Parse out a list of IP:PORT - 192.168.2.11:443
 * Create indidivual files for IPs of open ports to be used with other tools
 
 
