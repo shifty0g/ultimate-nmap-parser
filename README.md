@@ -48,7 +48,9 @@ chmod +x ultimate-nmap-parser.sh
 
 ```
 
-## Example
+## Example Output 
+
+### ./ultimate-nmap-parser.sh *.gnmap --all
 
 [![asciicast](https://asciinema.org/a/OuQNlH1fnO0TBTNmQFQwW0a9z.svg)](https://asciinema.org/a/OuQNlH1fnO0TBTNmQFQwW0a9z)
 
@@ -469,7 +471,7 @@ smb://10.10.10.152
 
 
 
-### ./ultimate-nmap-parser.sh *.gnmap --csv
+### ./ultimate-nmap-parser.sh *.gnmap --closed
 
 ```
 Closed Ports For Host: 192.168.0.23 
@@ -477,4 +479,44 @@ Closed Ports For Host: 192.168.0.23
  
 Closed Ports For Host: 192.168.0.25 
 	49154, 49163, 5001, 6000, 6100, 8081, 9080, 9998, 9999, 
+```
+
+
+### ./ultimate-nmap-parser.sh *.gnmap --closed
+
+```
+ls  parse/hosts 
+hosts_10000-tcp-http.txt      hosts_143-tcp-imap.txt      hosts_443-tcp-sslhttps.txt     hosts_500-udp-isakmp.txt      hosts_8080-tcp-tcpwrapped.txt
+hosts_10000-udp-ndmp.txt      hosts_21-tcp-ftp.txt        hosts_443-tcp-sslhttp.txt      hosts_53-tcp-domain.txt       hosts_80-tcp-http.txt
+hosts_110-tcp-pop3.txt        hosts_2222-tcp-ssh.txt      hosts_443-tcp-tcpwrapped.txt   hosts_53-udp-domain.txt       hosts_993-tcp-sslimap.txt
+hosts_123-udp-ntp.txt         hosts_22-tcp-ssh.txt        hosts_445-tcp-microsoftds.txt  hosts_593-tcp-ncacn_http.txt  hosts_995-tcp-sslpop3.txt
+hosts_135-tcp-msrpc.txt       hosts_3000-tcp-http.txt     hosts_445-tcp-netbiosssn.txt   hosts_636-tcp-sslldap.txt
+hosts_137-udp-netbiosns.txt   hosts_3268-tcp-ldap.txt     hosts_464-tcp-kpasswd5.txt     hosts_6666-tcp-http.txt
+hosts_139-tcp-netbiosssn.txt  hosts_3269-tcp-sslldap.txt  hosts_49153-udp-unknown.txt    hosts_8080-tcp-httpproxy.txt
+hosts_1433-tcp-mssqls.txt     hosts_389-tcp-ldap.txt      hosts_49200-udp-unknown.txt    hosts_8080-tcp-http.txt
+
+# cat parse/hosts/hosts_21-tcp-ftp.txt 
+10.10.10.103
+10.10.10.123
+10.10.10.131
+10.10.10.152
+
+# cat parse/hosts/hosts_80-tcp-http.txt 
+10.10.10.101
+10.10.10.103
+10.10.10.119
+10.10.10.120
+10.10.10.121
+10.10.10.122
+10.10.10.123
+10.10.10.124
+10.10.10.126
+10.10.10.127
+10.10.10.128
+10.10.10.129
+10.10.10.130
+10.10.10.131
+10.10.10.133
+10.10.10.152
+
 ```
