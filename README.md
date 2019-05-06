@@ -50,7 +50,7 @@ chmod +x ultimate-nmap-parser.sh
 
 ## Example
 
-Here
+[![asciicast](https://asciinema.org/a/OuQNlH1fnO0TBTNmQFQwW0a9z.svg)](https://asciinema.org/a/OuQNlH1fnO0TBTNmQFQwW0a9z)
 
 ### ./ultimate-nmap-parser.sh --help
 ```
@@ -465,4 +465,16 @@ smb://10.10.10.130
 smb://10.10.10.132
 smb://10.10.10.134
 smb://10.10.10.152
+```
+
+
+
+### ./ultimate-nmap-parser.sh *.gnmap --csv
+
+```
+Closed Ports For Host: 192.168.0.23 
+	123, 1234, 49154, 49155, 49163, 5001, 6000, 6100, 80, 8081, 9080, 9998, 9999, 
+ 
+Closed Ports For Host: 192.168.0.25 
+	49154, 49163, 5001, 6000, 6100, 8081, 9080, 9998, 9999, 
 ```
