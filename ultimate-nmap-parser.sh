@@ -1,13 +1,16 @@
 #!/bin/bash
 fname="ultimate-nmap-parser.sh"
-version="0.5.2"
-modified="15/04/2019"
+version="0.5.4"
+modified="05/05/2019"
 
 # TO DO:
-#
+# BUG: cant handle paths with spaces. so far the makcsv function doesnt appear to write to temp.csv
+#      **THINK I FIXED THIS -- Need lots more testing. go through and parse last projectes
+# --------------------
 # - 1. check if tcp,udp,unique,up and down files are empty - if empty then say 
 # - 2. more check of input file and exit if cant find open it. if no inputfile - exit
 # - 3. better checks for Up/Down hosts
+# - take in xml file do checks and make more vauge... maybe make it pickup from folder location in futue 
 # - make the output echo out each host file 
 # - lots more work needed on the output bit at the end  maybe use the ifs
 # - make like a log file - time stats. input swtichees used files es.. all stats ports est
@@ -33,15 +36,23 @@ modified="15/04/2019"
 # - more testing .... different sets of files ips est to see 
 
 
-
-
 #----------------------------------------------------------------- START OF SCRIPT -----------------------------------------------------------------
+
+
+# colours - https://misc.flogisoft.com/bash/tip_colors_and_formatting
+RED='\e[91m'
+RESETCOL='\e[39m'
 
 
 # doesnt seem to work that well so used version sort seems to be the best
 export sortip="sort -V"
 #export sortip="sort -t. -n -k1 | sort -t. -n -k2 | sort -t. -n -k3 | sort -t. -n -k4 | sort -u -V"
 #export sortip="sort -t. -k 1 -V | sort -t. -k 2 -V | sort -t. -k 3 -V | sort -t. -k 4 -V"
+
+
+#name of temp files
+inputtemp="temp.gnmap"
+csvtemp="temp.csv"
 
 
 #output folder 
@@ -84,8 +95,7 @@ men_web="N"
 men_hostports="N"
 men_closed="N"
 men_report1="N"
-
-
+men_htmlreport="N"
 
 
 function header () {
@@ -139,11 +149,10 @@ echo
 echo -e "\e[93m[options]:"
 echo 
 echo "	--help		Show this help menu"
-echo "	--all		Runs ALL options - EXCLUDING: report1"
+echo "	--all		Runs ALL options - **EXCLUDING: report1, --html**"
 echo "	--csv		Create .csv file - $outputcsvfile"
 echo "	--summary	Create host Summary report - $outputsummaryfile"
 echo "	--closed	Create Summary of hosts with CLOSED ports - $outputclosedfile"
-echo "  	--report1   	Report - IP[PORT1,PORT2,PORT3, ] - parsip.pl" 
 echo "	--unique	Parse open unique TCP & UDP ports - $outputuniquefile"
 echo "	--tcp		Parse open TCP ports - $outputtcpfile"
 echo "	--udp		Parse open UDP ports - $outputudpfile"
@@ -154,6 +163,8 @@ echo "	--smb		Generate smb paths smb://IP - $outputsmbfile"
 echo "	--web		Generate web URLS http://IP:PORT https://IP:PORT  - $outputwebfile"
 echo "	--ssl		Generate ssl/tls hosts list IP:PORT - $outputsslfile"
 echo "	--hostports	Generate hosts/hosts_<PORT>-<PROTOCOL>-<SERVICE>.txt files"
+#echo "	--html		Generates a .html report for each scan (uses xml file - will auto pickup from \$pwd)"
+echo "  --report1   	Report - IP[PORT1,PORT2,PORT3, ] - parsip.pl" 
 echo 
 echo -e "\e[39m[*] Example:"
 echo 
@@ -182,6 +193,13 @@ echo "filecheck - "$filecheck
 echo "#######################################################################################"
 }
 
+function mastercleanup () {
+# MASTER cleanup - lazy just to wipe the temp stuff before and after soo all fresh
+rm "${outpath}tempinput" "${outpath}ipptemp" "${outpath}closedtemp" "${outpath}summtemp" "${outpath}tempfile" "${outpath}tempfile2" "${outpath}$varTempFile2" "${outpath}inputfile" "${outpath}$varTempFile" "${outpath}$tempfile" "${outpath}$varSummTempFile" "${outpath}webtemp" "${outpath}webtemp2" "${hostportspath}hostptemp" "${outpath}$inputtemp" "${outpath}$inputtemp "${outputpath}$csvtemp > /dev/null 2>&1
+}
+
+
+
 function makecsv () {
 # this is the main function which processes the inputfile and creates a csv file 
 echo -e "\e[1m\e[93m[>]\e[0m Creating CSV File"
@@ -190,8 +208,8 @@ while read line; do
 	if [ "$checkport" != "" ]; then
 		host=$(echo $line | awk '{print $2}')
 		lineports=$(echo $line | awk '{$1=$2=$3=$4=""; print $0}')
-		if [ -f ${outpath}"tempfile2" ]; then rm ${outpath}"tempfile2"; fi
-		echo "$lineports" | tr "," "\n" | sed 's/^ *//g' >> ${outpath}"tempfile2"
+		if [ -f "${outpath}"tempfile2"" ]; then rm "${outpath}"tempfile2""; fi
+		echo "$lineports" | tr "," "\n" | sed 's/^ *//g' >> "${outpath}"tempfile2""
 		# Read the per-host temp file to write each open port as a line to the CSV temp file
 		while read templine; do
 		# check for open port
@@ -202,44 +220,46 @@ while read line; do
 			protocol=$(echo $templine | awk -F '/' '{print $3}')
 			service=$(echo $templine | awk -F '/' '{print $5}')
 			version=$(echo $templine | awk -F '/' '{print $7}')
-			echo "$host,$port,$status,$protocol,$service,$version" >> ${outpath}"temp.csv"
+			echo "$host,$port,$status,$protocol,$service,$version" >> "${outpath}$csvtemp"
 		fi
-		done < ${outpath}"tempfile2"
+		done < "${outpath}tempfile2"
 	fi
-done < ${outpath}"inputfile" 
+done < "${outpath}$inputtemp" 
+
+
 
 # finalise and move the file if temp.csv
-if [ -f ${outpath}"temp.csv" ]; then
-   echo "HOST,PORT,STATUS,PROTOCOL,SERVICE,VERSION" > ${outpath}$outputcsvfile 
+if [ -f "${outpath}$csvtemp" ]; then
+   echo "HOST,PORT,STATUS,PROTOCOL,SERVICE,VERSION" > "${outpath}$outputcsvfile" 
    # sort by ip address - 1st.2nd.3rd.4th
-   cat ${outpath}"temp.csv" | sort -t"," -n -k1 | $sortip >> ${outpath}$outputcsvfile 
+   cat "${outpath}"temp.csv"" | sort -t"," -n -k1 | $sortip >> "${outpath}$outputcsvfile" 
    echo "	- $outputcsvfile"
 fi
 
 #cleanup 
-rm ${outpath}"temp.csv" ${outpath}"tempfile2" > /dev/null 2>&1
+rm "${outpath}$csvtemp" "${outpath}"tempfile2"" > /dev/null 2>&1
 
 echo
 #end
 }
 
 function checkcsv () {
-# checks if the makecsv function has already ran and then sets the tempfile varible - stops repition as most other functions use the csv file 
+# checks if the makecsv fu nction has already ran and then sets the tempfile varible - stops repition as most other functions use the csv file 
 if [ "$men_csv" == "Y" ]
 then
-	cp ${outpath}$outputcsvfile ${outpath}"tempinput"
+	cp "${outpath}$outputcsvfile" "${outpath}$csvtemp"
 else
 	makecsv > /dev/null 2>&1
-	mv ${outpath}$outputcsvfile ${outpath}"tempinput"
+	mv "${outpath}$outputcsvfile" "${outpath}$csvtemp"
 fi
 
 # remove the head from the csv file 
-sed -i -e "1d" ${outpath}"tempinput"
+sed -i -e "1d" "${outpath}$csvtemp"
 
 # remove lines that have closed ports 
-sed -i '/,closed,/d' ${outpath}"tempinput"
+sed -i '/,closed,/d' "${outpath}$csvtemp"
 
-export tempfile=$(realpath ${outpath}"tempinput")
+export tempfile="$(realpath "${outpath}$csvtemp")"
 
 # end
 }
@@ -252,10 +272,10 @@ echo -e "\e[1m\e[93m[>]\e[0m Creating Summary"
 checkcsv
 
 #clear any old file - fresh
-rm ${outpath}$outputsummaryfile > /dev/null 2>&1
+rm "${outpath}$outputsummaryfile" > /dev/null 2>&1
 
-echo "+=========================================================================================+" >> ${outpath}$outputsummaryfile
-printf "%-18s %-16s %-52.52s %-2s \n" "| HOST " "| PORT / PROTOCOL" " | SERVICE" "|" >> ${outpath}$outputsummaryfile
+echo "+=========================================================================================+" >> "${outpath}$outputsummaryfile"
+printf "%-18s %-16s %-52.52s %-2s \n" "| HOST " "| PORT / PROTOCOL" " | SERVICE" "|" >> "${outpath}$outputsummaryfile"
 lasthost=""
 while read line; do
 	host=$(echo $line | awk -F ',' '{print $1}')
@@ -263,22 +283,22 @@ while read line; do
 	protocol=$(echo $line | awk -F ',' '{print $4}')
 	service=$(echo $line | awk -F ',' '{print $5}')
 	version=$(echo $line | awk -F ',' '{print $6}')
-	if [ "$host" != "$lasthost" ]; then echo "+=========================================================================================+" >> ${outpath}$outputsummaryfile; fi
+	if [ "$host" != "$lasthost" ]; then echo "+=========================================================================================+" >> "${outpath}$outputsummaryfile"; fi
 	if [ "$version" = "" ]; then
-	version=""
+		version=""
 	else
-	version="- $version"
+		version="- $version"
 	fi
-	printf "%-18s %-16s %-52.52s %-2s \n" "| $host " "| $port / $protocol " "  | $service $version" " |" >> ${outpath}$outputsummaryfile
+	printf "%-18s %-16s %-52.52s %-2s \n" "| $host " "| $port / $protocol " "  | $service $version" " |" >> "${outpath}$outputsummaryfile"
 	lasthost="$host"
-done < $tempfile
-echo "+=========================================================================================+" >> ${outpath}$outputsummaryfile
+done < "$tempfile"
+echo "+=========================================================================================+" >> "${outpath}$outputsummaryfile"
 
 echo "	- $outputsummaryfile"
 echo
 
 #cleanup
-rm  $tempfile > /dev/null 2>&1
+rm  "$tempfile" > /dev/null 2>&1
 
 #end
 }
@@ -291,13 +311,13 @@ echo -e "\e[1m\e[93m[>]\e[0m Creating IP Port file "
 checkcsv
 
 #clear any old file - fresh
-rm ${outpath}$outputipfile > /dev/null 2>&1
+rm "${outpath}$outputipfile" > /dev/null 2>&1
 
 # finalise the file and clean up 
-cat $tempfile  | cut -d, -f1,2 | tr -d '"' | tr , : | $sortip > ${outpath}$outputipfile
+cat "$tempfile"  | cut -d, -f1,2 | tr -d '"' | tr , : | $sortip > "${outpath}$outputipfile"
 
 #cleanup
-rm  $tempfile > /dev/null 2>&1
+rm  "$tempfile" > /dev/null 2>&1
 
 echo "	- $outputipfile"
 echo
@@ -308,13 +328,13 @@ echo
 function uphosts () {
 # creates a file with IPs for hosts with Up Statues - needs further checks to be better 
 echo -e "\e[1m\e[93m[>]\e[0m Parsing up hosts"
-cat $inputfilepath | grep 'Status: Up' | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b" | sort -u | $sortip  > ${outpath}$outputupfile 
+cat "$inputfilepath" | grep -e 'Status: Up' -e '/open/' | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b" | sort -u -V  > "$outpath$outputupfile" 
 
 # check if there are actually any IP addresses in the file - if not delete it no point 
-if [ -z "$(cat ${outpath}$outputupfile | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b")" ]
+if [ -z "$(cat "${outpath}$outputupfile" | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b")" ]
 then
-      echo "	- no up hosts"
-	  rm ${outpath}$outputupfile > /dev/null 2>&1
+	  echo -e "$RED	- no up hosts $RESETCOL"
+	  rm "${outpath}$outputupfile" > /dev/null 2>&1
 else
       echo "	- $outputupfile"
 fi
@@ -327,13 +347,13 @@ echo
 function downhosts () {
 # creates a file with IPs for hosts with Down status 
 echo -e "\e[1m\e[93m[>]\e[0m Parsing down hosts"
-cat $inputfilepath | grep 'Status: Down' | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b" | sort -u | $sortip > ${outpath}$outputdownfile
+cat "$inputfilepath" | grep 'Status: Down' | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b" | sort -u -V > "${outpath}$outputdownfile"
 
 # check if there are actually any IP addresses in the file - if not delete it no point 
-if [ -z "$(cat ${outpath}$outputdownfile | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b")" ]
+if [ -z "$(cat "${outpath}$outputdownfile" | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b")" ]
 then
-      echo "	- no down hosts"
-	  rm ${outpath}$outputdownfile > /dev/null 2>&1
+      echo -e "$RED	- no down hosts $RESETCOL"
+	  rm "${outpath}$outputdownfile" > /dev/null 2>&1
 else
       echo "	- $outputdownfile"
 fi
@@ -345,13 +365,13 @@ echo
 function uniqueports () {
 # creates a file listing out uniquie open TCP and UDP ports
 echo -e "\e[1m\e[93m[>]\e[0m Parsing unique ports"
-cat $inputfilepath | grep -o -P '.{0,9}/open/' | awk '{ print $2}' | cut -d /  -f 1 | sort -u | paste -s -d, 2>&1 > ${outpath}$outputuniquefile; 
+cat "$inputfilepath" | grep -o -P '.{0,9}/open/' | awk '{ print $2}' | cut -d /  -f 1 | sort -u -V | paste -s -d, 2>&1 > "${outpath}$outputuniquefile"; 
 
 # check for a number if the file has them then likely has ports in  
-if [ -z "$(cat ${outpath}$outputuniquefile | grep '[0-9]')" ]
+if [ -z "$(cat "${outpath}$outputuniquefile" | grep '[0-9]')" ]
 then
-      echo "	- no Unique ports"
-	  rm ${outpath}$outputuniquefile > /dev/null 2>&1
+	  echo -e "$RED	- no Unique ports $RESETCOL"
+	  rm "${outpath}$outputuniquefile" > /dev/null 2>&1
 else
       echo "	- $outputuniquefile"
 fi
@@ -363,13 +383,13 @@ echo
 function tcpports () {
 # creates a file of unqiue open TCP ports - 22,23,80,443...
 echo -e "\e[1m\e[93m[>]\e[0m Parsing tcp ports"
-cat $inputfilepath | grep '/tcp/' | grep -o -P '.{0,9}/open/' | awk '{ print $2}' | cut -d /  -f 1 | sort --unique | paste -s -d, 2>&1 > ${outpath}$outputtcpfile;
+cat "$inputfilepath" | grep '/tcp/' | grep -o -P '.{0,9}/open/' | awk '{ print $2}' | cut -d /  -f 1 | sort -u -V | paste -s -d, 2>&1 > "${outpath}$outputtcpfile";
 
 # check for a number if the file has them then likely has ports in  
-if [ -z "$(cat ${outpath}$outputtcpfile |  grep '[0-9]')" ]
+if [ -z "$(cat "${outpath}$outputtcpfile" |  grep '[0-9]')" ]
 then
-      echo "	- no TCP ports"
-	  rm ${outpath}$outputtcpfile > /dev/null 2>&1
+	  echo -e "$RED	- no TCP ports $RESETCOL"
+	  rm "${outpath}$outputtcpfile" > /dev/null 2>&1
 else
       echo "	- $outputtcpfile"
 fi
@@ -382,13 +402,13 @@ echo
 function udpports () {
 # creates a file of unqiue open UDP ports - 53,161...
 echo -e "\e[1m\e[93m[>]\e[0m Parsing udp ports"
-cat $inputfilepath | grep '/udp/'  | grep -o -P '.{0,9}/open/' | awk '{ print $2}' | cut -d /  -f 1 | sort --unique | paste -s -d, 2>&1 > ${outpath}$outputudpfile
+cat "$inputfilepath" | grep '/udp/'  | grep -o -P '.{0,9}/open/' | awk '{ print $2}' | cut -d /  -f 1 | sort -u -V | paste -s -d, 2>&1 > "${outpath}$outputudpfile"
 
 # check for a number if the file has them then likely has ports in  
-if [ -z "$(cat ${outpath}$outputudpfile | grep '[0-9]')" ]
+if [ -z "$(cat "${outpath}$outputudpfile" | grep '[0-9]')" ]
 then
-      echo "	- no UDP ports"
-	  rm ${outpath}$outputudpfile > /dev/null 2>&1
+	  echo -e "$RED	- no UDP ports $RESETCOL"
+	  rm "${outpath}$outputudpfile" > /dev/null 2>&1
 else
       echo "	- $outputudpfile"
 fi
@@ -401,15 +421,15 @@ function smb () {
 # createa file for URI smb://192.168.1.1 
 # will only grab out OPEN 445 TCP 
 echo -e "\e[1m\e[93m[>]\e[0m Creating smb paths"
-cat $inputfilepath | grep '445/open/tcp/' | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b" | sed -e 's/^/smb:\/\//' | sort -u | $sortip | sort -t'/' -k2 -V  > ${outpath}$outputsmbfile
+cat "$inputfilepath" | grep '445/open/tcp/' | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b" | sed -e 's/^/smb:\/\//' | sort -u | $sortip | sort -t'/' -k2 -V  > "${outpath}$outputsmbfile"
 
 # check for a smb:// if the file has them then likely has ports in  
-if [ -z "$(cat ${outpath}$outputsmbfile | grep 'smb://')" ]
+if [ -z "$(cat "${outpath}$outputsmbfile" | grep 'smb://')" ]
 then
-      echo "	- no UDP ports"
-	  rm ${outpath}$outputsmbfile > /dev/null 2>&1
+	echo -e "$RED	- no SMB ports $RESETCOL"
+	rm "${outpath}$outputsmbfile" > /dev/null 2>&1
 else
-      echo "	- $outputsmbfile"
+	echo "	- $outputsmbfile"
 fi
 echo
 
@@ -421,39 +441,39 @@ function web () {
 echo -e "\e[1m\e[93m[>]\e[0m Creating web URLS"
 
 # start fresh
-rm ${outpath}$webfinalname ${outpath}webtemp2  > /dev/null 2>&1
+rm "${outpath}$webfinalname" "${outpath}webtemp2"  > /dev/null 2>&1
 
 #check that the csv file has been created
 checkcsv
 
-for line in $(cat $tempfile); do
+for line in $(cat "$tempfile"); do
 	host=$(echo $line | awk -F ',' '{print $1}')
 	port=$(echo $line | awk -F ',' '{print $2}')
 	service=$(echo $line | awk -F ',' '{print $5}')
 	version=$(echo $line | awk -F ',' '{print $6}')
 	
 	# a little overboard with the checks just to make sure all web ports are collected
-	if [ "$port" = "80" ]; then echo "http://${host}:80/" >> ${outpath}webtemp2; fi
-    if [ "$port" = "443" ]; then echo "https://${host}:443/" >> ${outpath}webtemp2; fi
-    if [ "$port" = "8080" ]; then echo "http://${host}:8080/" >> ${outpath}webtemp2; fi
-    if [ "$port" = "8443" ]; then echo "https://${host}:8443/" >> ${outpath}webtemp2; fi
-	if [ "$service" = "http" ]; then echo "http://${host}:$port/" >> ${outpath}webtemp2; fi
-	if [ "$service" = "ssl" ]; then echo "https://${host}:$port/" >> ${outpath}webtemp2; fi
-	if [ "$version" = "*Web*" ]; then echo "http://${host}:$port/" >> ${outpath}webtemp2; fi
-	if [ "$version" = "*web*" ]; then echo "http://${host}:$port/" >> ${outpath}webtemp2; fi
+	if [ "$port" = "80" ]; then echo "http://${host}:$port/" >> "${outpath}webtemp2"; fi
+   	if [ "$port" = "443" ]; then echo "https://${host}:$port/" >> "${outpath}webtemp2"; fi
+    	if [ "$port" = "8080" ]; then echo "http://${host}:$port/" >> "${outpath}webtemp2"; fi
+    	if [ "$port" = "8443" ]; then echo "https://${host}:$port/" >> "${outpath}webtemp2"; fi
+	if [ "$service" = "http" ]; then echo "http://${host}:$port/" >> "${outpath}webtemp2"; fi
+	if [[ "$service" == *"ssl"* ]]; then echo "https://${host}:$port/" >> "${outpath}webtemp2"; fi
+	if [[ "$version" == *"Web"* ]]; then echo "http://${host}:$port/" >> "${outpath}webtemp2"; fi
+	if [[ "$version" == *"web"* ]]; then echo "http://${host}:$port/" >> "${outpath}webtemp2"; fi
 done
 
 # if webtemp2 exists then sort it 
-if [ -f ${outpath}webtemp2 ]; then
-	sort -u ${outpath}webtemp2 | $sortip | sort -t'/' -k2 -V  > ${outpath}$outputwebfile 2>&1
+if [ -f "${outpath}webtemp2" ]; then
+	sort -u "${outpath}webtemp2" | $sortip | sort -t'/' -k2 -V  > "${outpath}$outputwebfile" 2>&1
 	echo "	- $outputwebfile"
 else
-	echo "	- no ports found"
-	rm ${outpath}$outputwebfile > /dev/null 2>&1
+	echo -e "$RED	- no ports found $RESETCOL"
+	rm "${outpath}$outputwebfile" > /dev/null 2>&1
 fi
 
 #cleanup
-rm ${outpath}webtemp2 $tempfile  > /dev/null 2>&1
+rm "${outpath}webtemp2" "$tempfile"  > /dev/null 2>&1
 
 echo
 
@@ -464,38 +484,39 @@ function ssl () {
 echo -e "\e[1m\e[93m[>]\e[0m Creating ssl/tls list"
 
 # start fresh
-rm ${outpath}$outputsslfile ${outpath}ssltemp2 > /dev/null 2>&1
+rm "${outpath}$outputsslfile" "${outpath}ssltemp2" > /dev/null 2>&1
 
 #check that the csv file has been created
 checkcsv
 
-for line in $(cat $tempfile); do
+for line in $(cat "$tempfile"); do
 	host=$(echo $line | awk -F ',' '{print $1}')
 	port=$(echo $line | awk -F ',' '{print $2}')
 	service=$(echo $line | awk -F ',' '{print $5}')
 	version=$(echo $line | awk -F ',' '{print $6}')
 	
-	# a little overboard again
-	if [ "$port" = "443" ]; then echo "${host}:$port" >> ${outpath}ssltemp2; fi
-	if [ "$service" = "*ssl*" ]; then echo "${host}:$port" >> ${outpath}ssltemp2; fi
-	if [ "$version" = "*ssl*" ]; then echo "${host}:$port" >> ${outpath}ssltemp2; fi
-	if [ "$service" = "*tls*" ]; then echo "${host}:$port" >> ${outpath}ssltemp2; fi
-	if [ "$version" = "*tls*" ]; then echo "${host}:$port" >> ${outpath}ssltemp2; fi
+	# a little overboard again - just to get anything with ssl or tls in 
+	if [ "$port" == "443" ]; then echo "${host}:$port" >> "${outpath}ssltemp2"; fi
+	if [[ "$service" == *"ssl"* ]]; then echo "${host}:$port" >> "${outpath}ssltemp2"; fi
+	if [[ "$version" == *"ssl"* ]]; then echo "${host}:$port" >> "${outpath}ssltemp2"; fi
+	if [[ "$service" == *"tls"* ]]; then echo "${host}:$port" >> "${outpath}ssltemp2"; fi
+	if [[ "$version" == *"tls"* ]]; then echo "${host}:$port" >> "${outpath}ssltemp2"; fi
+
 done
 
 
 # if webtemp2 exists then sort it 
-if [ -f ${outpath}ssltemp2 ]; then
-	sort -u ${outpath}ssltemp2 | $sortip > ${outpath}$outputsslfile 2>&1
+if [ -f "${outpath}ssltemp2" ]; then
+	sort -u "${outpath}ssltemp2" | $sortip > "${outpath}$outputsslfile" 2>&1
 	echo "	- $outputsslfile"
 else
-	echo "	- no ports found"
-	rm ${outpath}$outputsslfile > /dev/null 2>&1
+	echo -e "$RED	- no ports found $RESETCOL"
+	rm "${outpath}$outputsslfile" > /dev/null 2>&1
 fi
 
 
 #clean up function
-rm ${outpath}ssltemp ${outpath}ssltemp2 $tempfile > /dev/null 2>&1
+rm "${outpath}ssltemp" "${outpath}ssltemp2" "$tempfile" > /dev/null 2>&1
 
 echo
 
@@ -508,31 +529,31 @@ function hostports () {
 echo -e "\e[1m\e[93m[>]\e[0m Generating host port files"
 
 # fresh folder
-rm ${outpath}$outhostsdir -rf > /dev/null 2>&1
+rm "${outpath}$outhostsdir" -rf > /dev/null 2>&1
 
 # make folder - this can be spammy
-mkdir ${outpath}$outhostsdir > /dev/null 2>&1
-hostportspath=$(realpath $outpath$outhostsdir)
+mkdir "${outpath}$outhostsdir" > /dev/null 2>&1
+hostportspath=$(realpath "$outpath$outhostsdir")
 
 #check that the csv file has been created
 checkcsv
 
 # loop through and Create split hosts files for each protocol
-for line in $(cat $tempfile); do
+for line in $(cat "$tempfile"); do
 	host=$(echo $line | awk -F ',' '{print $1}')
 	port=$(echo $line | awk -F ',' '{print $2}')
 	proto=$(echo $line | awk -F ',' '{print $4}')
 	service=$(echo $line | awk -F ',' '{print $5}' | tr -d '-' | tr -d '?' | tr -d '|' )
 	# need to add better service names	
-    echo $host >> $hostportspath"/hosts_"$port-$proto-$service.txt
+    echo $host >> "$hostportspath/hosts_$port-$proto-$service.txt"
 done
 
 
 #function cleanup
-rm  ${hostportspath}/hosts_--.txt $tempfile > /dev/null 2>&1
+rm  "${hostportspath}/hosts_--.txt" "$tempfile" > /dev/null 2>&1
 
 
-echo "	- "${hostportspath}"hosts_[PORT]-[PROTOCOL]-[SERVICE].txt"
+echo "	- "${outhostsdir}"/hosts_[PORT]-[PROTOCOL]-[SERVICE].txt"
 echo
 #end
 }
@@ -541,14 +562,14 @@ function closedsummary() {
 # creates a little report of hosts with closed ports
 echo -e "\e[1m\e[93m[>]\e[0m Generating  Closed Ports Summary"
 
-rm ${outpath}$outputclosedsummaryfile > /dev/null 2>&1
-for host in $(cat $inputfilepath | grep "Host:" | grep "\/closed\/" | awk '{ print $2}'| sort --unique); do # will go through each host
-    echo "Closed Ports For Host: $host " >> ${outpath}$outputclosedsummaryfile
-	echo -n "	" >> ${outpath}$outputclosedsummaryfile
-    for port in $(cat $inputfilepath | grep -w $host | grep -o -P '.{0,10}/closed/' | awk '{ print $2}' | cut -d /  -f 1 | sort --unique); do # go through ports
-		echo -n $port", " >> ${outpath}$outputclosedsummaryfile
+rm "${outpath}$outputclosedsummaryfile" > /dev/null 2>&1
+for host in $(cat "$inputfilepath" | grep "Host:" | grep "\/closed\/" | awk '{ print $2}'| sort --unique); do # will go through each host
+    echo "Closed Ports For Host: $host " >> "${outpath}$outputclosedsummaryfile"
+	echo -n "	" >> "${outpath}$outputclosedsummaryfile"
+    for port in $(cat "$inputfilepath" | grep -w $host | grep -o -P '.{0,10}/closed/' | awk '{ print $2}' | cut -d /  -f 1 | sort --unique); do # go through ports
+		echo -n $port", " >> "${outpath}$outputclosedsummaryfile"
     done # end ports loop
-	echo -e "\n " >> ${outpath}$outputclosedsummaryfile
+	echo -e "\n " >> "${outpath}$outputclosedsummaryfile"
 done # end hosts loop
 
 # old oneliner
@@ -560,22 +581,40 @@ echo
 #end
 }
 
+
+function htmlreport () {
+
+# NOT YET IMLAMENTED
+
+# Experminetal and made just 
+# creates a .html report from each .xml file in current directory - ignored the gnmap file input 
+# uses https://github.com/honze-net/nmap-bootstrap-xsl
+#
+#while read line; do 
+#      # line is available for processing
+#      cat $line    
+#done < $(ls | grep .xml)
+ 
+
+
+}
+
 function report1() {
 # create a different type of report like  parsip - will produce same output as nmap-parse.py
 
 echo -e "\e[1m\e[93m[>]\e[0m Generating Report1"
 
 # start fresh
-rm ${outpath}$outputreport1file ${outpath}"reportemp" > /dev/null 2>&1
+rm "${outpath}$outputreport1file" "${outpath}"reportemp"" > /dev/null 2>&1
 
 for host in $(cat $inputfilepath | grep "Host:" | grep "\/open\/" | awk '{ print $2}'| sort --unique); do # will go through each host
-    echo -n $host  "[" >> ${outpath}"reportemp"
+    echo -n $host  "[" >> "${outpath}"reportemp""
     for port in $(cat $inputfilepath | grep -w $host | grep -o -P '.{0,10}/open/' | awk '{ print $2}' | cut -d /  -f 1 | sort --unique); do # go through ports
-		echo -n $port", " >> ${outpath}"reportemp"
+		echo -n $port", " >> "${outpath}"reportemp""
     done # end ports loop
-    echo  "]" >> ${outpath}"reportemp"
+    echo  "]" >> "${outpath}"reportemp""
 done # end hosts loop
-cat ${outpath}"reportemp" | $sortip | grep -v "\[\]"  >  ${outpath}$outputreport1file
+cat "${outpath}"reportemp"" | $sortip | grep -v "\[\]"  >  "${outpath}$outputreport1file"
 
 echo "	- "$outputreport1file
 echo
@@ -583,18 +622,53 @@ echo
 #end
 }
 
+function printresults() {
+# will print out the files generated at the end
+
+# if yes will print the output - maybe flip this around so ENTER is for yes
+echo 
+read -p "[-] Display Output? <ENTER = YES / Anything else = NO> : " prompt
+echo
+if [ -z "$prompt" ]
+then
+	if [ $men_all == "Y" ]
+	then
+		more "${outpath}"*.txt
+		more "${hostportspath}/hosts_"*.txt
+	else
+		if [ "$men_csv" == "Y" ]; then cat "${outpath}$outputcsvfile" 2> /dev/null; fi
+		if [ "$men_summary" == "Y" ]; then cat "${outpath}$outputsummaryfile" 2> /dev/null; fi
+		if [ "$men_ipport" == "Y" ]; then cat "${outpath}$outputipfile" 2> /dev/null; fi
+		if [ "$men_uports" == "Y" ]; then cat "${outpath}$outputuniquefile" 2> /dev/null; fi
+		if [ "$men_tcpports" == "Y" ]; then	cat "${outpath}$outputtcpfile" 2> /dev/null; fi
+		if [ "$men_udpports" == "Y" ]; then	cat "${outpath}$outputudpfile" 2> /dev/null; fi
+		if [ "$men_uphosts" == "Y" ]; then cat "${outpath}$outputupfile" 2> /dev/null; fi
+		if [ "$men_downhosts" == "Y" ]; then cat "${outpath}$outputdownfile"; fi
+		if [ "$men_smb" == "Y" ]; then cat "${outpath}$outputsmbfile" 2> /dev/null; fi
+		if [ "$men_web" == "Y" ]; then cat "${outpath}$outputwebfile" 2> /dev/null; fi
+		if [ "$men_ssl" == "Y" ]; then cat "${outpath}$outputsslfile" 2> /dev/null; fi
+		if [ "$men_closed" == "Y" ]; then cat "${outpath}$outputclosedsummaryfile" 2> /dev/null; fi
+		if [ "$men_report1" == "Y" ]; then cat "${outpath}$outputreport1file" 2> /dev/null; fi
+		if [ "$men_hostports" == "Y" ]; then  more "${hostportspath}/hosts_"*.txt 2> /dev/null; fi
+	fi
+fi
+#end
+}
 
 
 ########################
 # MAIN 
 ########################
 
+#cleanup
+mastercleanup
 
 # look trough and check inputfile and switches
 for word in $(echo $*); do
 	#echo $word
 	if [[ $word == *".gnmap"* ]]; then
-		file+="$word "
+		#file+="$word "
+		cat "$(realpath $word)" | sort -V >> $inputtemp
 	fi
 	if [ $word == "--help" ]; then
 		header
@@ -656,6 +730,10 @@ for word in $(echo $*); do
 	if [ $word == "--report1" ]; then
 		men_report1="Y"
 		switch+="$word"
+	fi
+	if [ $word == "--html" ]; then
+		men_htmlreport="Y"
+		switch+="$word"
 	fi	
 	if [ $word == "--all" ]; then
 		#include 
@@ -676,34 +754,24 @@ for word in $(echo $*); do
 		
 		#exclude
 		men_report1="N"
-		
+		men_htmlreport="N"
+
 		#Create $outdir to put all outout in - stop spam
 		createoutdir="Y"
 		switch+="$word"
 	fi	
 done
 
-# check for valid file
-if [ -z "$file" ]
-then
-	  #header
-	  echo 
-      echo -e "\e[1m\e[91m[X] No input files FOUND - *.gnmap file required! [X]\e[0m"
-	  echo 
-	  helpmenu
-	  exit 
-else
-	# further checks on the file - is it valid 
-	#filecheck=$(file $file | grep -o -e ASCII && head $file | grep -o -e "\-oA" -e "\-oG")
-	#if [ !-z "$filecheck" ]
-	
-	if [ ! -z "$(file $file | grep -o -e ASCII && head $file | grep -o -e "\-oA" -e "\-oG")" ]
-	then
-		#sort out the file here 
-		cat $(realpath $file)| sort -V  > inputfile
-		#cat $(realpath $file) | sort -t"," -n -k1 | sort -t"." -n -k1 | sort -t"." -n -k2 | sort -t"." -n -k3 | sort -t"." -n -k4 > inputfile
-	fi
+
+# does some checks on the input file to make sure its .gnmap + inspects the file to see its finished and has the right output flags -oA or -oG	
+if [ -z "$(file "$(realpath $inputtemp)" | grep -o -e ASCII && head "$(realpath $inputtemp)" | grep -o -e "\-oA" -e "\-oG" && cat "$(realpath $inputtemp)")" ]; then
+	echo 	 	
+	echo -e "\e[1m\e[91m[X] No input files FOUND - \e[5m.gnmap \e[25mfilename required - Must be nmap grepable! [X]\e[0m"
+  	echo 
+  	helpmenu
+	exit 
 fi
+
 
 
 # check valid switches
@@ -726,11 +794,12 @@ if [ "$createoutdir" == "Y" ]
 then 
 	export outpath="$(realpath $outdir)/"
 	mkdir $outdir > /dev/null 2>&1
-	mv inputfile $outdir
-	export inputfilepath=$(realpath $outdir"/inputfile")
+	#mv inputfile $outdir
+	mv temp.gnmap $outdir
+	export inputfilepath="$(realpath "$outdir/$inputtemp")"
 else
 	export outpath=$(pwd)"/"
-	export inputfilepath=$(realpath "inputfile")
+	export inputfilepath="$(realpath $inputtemp)"
 fi
 
 
@@ -751,47 +820,24 @@ if [ "$men_ssl" == "Y" ]; then ssl; fi
 if [ "$men_hostports" == "Y" ]; then hostports; fi
 if [ "$men_closed" == "Y" ]; then closedsummary; fi
 if [ "$men_report1" == "Y" ]; then report1; fi
+if [ "$men_htmlreport" == "Y" ]; then htmlreport; fi
 
 
-# MASTER cleanup - lazy (each function should cleanup too but this needs to be checked also )
-rm ${outpath}"tempinput" ${outpath}"ipptemp" ${outpath}"closedtemp" ${outpath}"summtemp"  ${outpath}"tempfile" ${outpath}$varTempFile2 ${outpath}"inputfile" ${outpath}$varTempFile ${outpath}$tempfile ${outpath}$varSummTempFile ${outpath}"webtemp" ${outpath}"webtemp2" ${hostportspath}"hostptemp" > /dev/null 2>&1
 
 
 # print footer once completed 
 footer
 
+# if yet print the results 
+printresults
 
-# if yes will print the output - maybe flip this around so ENTER is for yes
-echo 
-read -p "[-] Display Output? <ENTER = YES / anything else = NO> : " prompt
-echo
-if [ -z "$prompt" ]
-then
-	if [ $men_all == "Y" ]
-	then
-		more ${outpath}*.txt
-		more ${hostportspath}"/hosts_"*.txt
-	else
-		if [ "$men_csv" == "Y" ]; then cat ${outpath}$outputcsvfile 2> /dev/null; fi
-		if [ "$men_summary" == "Y" ]; then cat ${outpath}$outputsummaryfile 2> /dev/null; fi
-		if [ "$men_ipport" == "Y" ]; then cat ${outpath}$outputipfile 2> /dev/null; fi
-		if [ "$men_uports" == "Y" ]; then cat ${outpath}$outputuniquefile 2> /dev/null; fi
-		if [ "$men_tcpports" == "Y" ]; then	cat ${outpath}$outputtcpfile 2> /dev/null; fi
-		if [ "$men_udpports" == "Y" ]; then	cat ${outpath}$outputudpfile 2> /dev/null; fi
-		if [ "$men_uphosts" == "Y" ]; then cat ${outpath}$outputupfile 2> /dev/null; fi
-		if [ "$men_downhosts" == "Y" ]; then cat ${outpath}$outputdownfile; fi
-		if [ "$men_smb" == "Y" ]; then cat ${outpath}$outputsmbfile 2> /dev/null; fi
-		if [ "$men_web" == "Y" ]; then cat ${outpath}$outputwebfile 2> /dev/null; fi
-		if [ "$men_ssl" == "Y" ]; then cat ${outpath}$outputsslfile 2> /dev/null; fi
-		if [ "$men_closed" == "Y" ]; then cat ${outpath}$outputclosedsummaryfile 2> /dev/null; fi
-		if [ "$men_report1" == "Y" ]; then cat ${outpath}$outputreport1file 2> /dev/null; fi
-		if [ "$men_hostports" == "Y" ]; then  more ${hostportspath}"/hosts_"*.txt 2> /dev/null; fi
-	fi
-fi
 
 # remove comment to enable diagnostics function
 #diagnostics
 
+
+#cleanup
+mastercleanup
 
 # exit 
 exit 0
