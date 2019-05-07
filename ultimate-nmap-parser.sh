@@ -583,17 +583,16 @@ echo
 
 
 function htmlreport () {
-
-# NOT YET IMLAMENTED
-
 # Experminetal and made just 
 # creates a .html report from each .xml file in current directory - ignored the gnmap file input 
 # uses https://github.com/honze-net/nmap-bootstrap-xsl
-#
-#while read line; do 
-#      # line is available for processing
-#      cat $line    
-#done < $(ls | grep .xml)
+
+xmlfiles=$(ls | grep .xml)
+
+while read line; do 
+      # line is available for processing
+      cat $line    
+done < $xmlfiles
  
 
 
