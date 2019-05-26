@@ -10,6 +10,7 @@ modified="05/05/2019"
 # - 1. check if tcp,udp,unique,up and down files are empty - if empty then say 
 # - 2. more check of input file and exit if cant find open it. if no inputfile - exit
 # - 3. better checks for Up/Down hosts
+# - add check to closed ports if no closed ports than say and dont make file liek the rest
 # - take in xml file do checks and make more vauge... maybe make it pickup from folder location in futue 
 # - make the output echo out each host file 
 # - lots more work needed on the output bit at the end  maybe use the ifs
@@ -496,7 +497,7 @@ for line in $(cat "$tempfile"); do
 	version=$(echo $line | awk -F ',' '{print $6}')
 	
 	# a little overboard again - just to get anything with ssl or tls in 
-	if [ "$port" == "443" ]; then echo "${host}:$port" >> "${outpath}ssltemp2"; fi
+	if [[ "$port" -eq "443" ]]; then echo "${host}:$port" >> "${outpath}ssltemp2"; fi
 	if [[ "$service" == *"ssl"* ]]; then echo "${host}:$port" >> "${outpath}ssltemp2"; fi
 	if [[ "$version" == *"ssl"* ]]; then echo "${host}:$port" >> "${outpath}ssltemp2"; fi
 	if [[ "$service" == *"tls"* ]]; then echo "${host}:$port" >> "${outpath}ssltemp2"; fi
@@ -545,15 +546,15 @@ for line in $(cat "$tempfile"); do
 	proto=$(echo $line | awk -F ',' '{print $4}')
 	service=$(echo $line | awk -F ',' '{print $5}' | tr -d '-' | tr -d '?' | tr -d '|' )
 	# need to add better service names	
-    echo $host >> "$hostportspath/hosts_$port-$proto-$service.txt"
+	echo $host >> "$hostportspath"/"$proto"_"$port-$service.txt"
 done
 
 
 #function cleanup
-rm  "${hostportspath}/hosts_--.txt" "$tempfile" > /dev/null 2>&1
+rm  "${hostportspath}/_-.txt" "$tempfile" > /dev/null 2>&1
 
 
-echo "	- "${outhostsdir}"/hosts_[PORT]-[PROTOCOL]-[SERVICE].txt"
+echo "	- "${outhostsdir}"/[PROTOCOL]_[PORT]-[SERVICE].txt"
 echo
 #end
 }
@@ -633,7 +634,7 @@ then
 	if [ $men_all == "Y" ]
 	then
 		more "${outpath}"*.txt
-		more "${hostportspath}/hosts_"*.txt
+		more "${hostportspath}"/*_*.txt
 	else
 		if [ "$men_csv" == "Y" ]; then cat "${outpath}$outputcsvfile" 2> /dev/null; fi
 		if [ "$men_summary" == "Y" ]; then cat "${outpath}$outputsummaryfile" 2> /dev/null; fi
