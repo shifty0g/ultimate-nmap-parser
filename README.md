@@ -1,8 +1,8 @@
 # Ultimate Nmap Parser 
 
-**Date: 06/05/2019**
+**Date: 08/06/2019**
 
-**VERSION 0.5.2**
+**VERSION 0.6**
 
 
 This is still in **BETA** - mileage may vary. Please let me know if you have any issues/bugs as im keen to have this fully working and will improve it overtime and add features
@@ -56,30 +56,16 @@ chmod +x ultimate-nmap-parser.sh
 
 ### ./ultimate-nmap-parser.sh --help
 ```
------------------------------------------------------------------------------------------------------------
+	_  _ _    ___ _ _  _ ____ ___ ____    _  _ _  _ ____ ___  
+	|  | |     |  | |\/| |__|  |  |___    |\ | |\/| |__| |__] 
+	|__| |___  |  | |  | |  |  |  |___    | \| |  | |  | |    
+			___  ____ ____ ____ ____ ____                   
+			|__] |__| |__/ [__  |___ |__/                   
+			|    |  | |  \ ___] |___ |  \                   
+			                                                
+Version: 0.6 - 08/06/2019
+Created By: Shifty0g 	https://github.com/shifty0g  
 
-               █    ██  ██▓  ▄▄▄█████▓ ██▓ ███▄ ▄███▓ ▄▄▄     ▄▄▄█████▓▓█████                                   
-               ██  ▓██▒▓██▒  ▓  ██▒ ▓▒▓██▒▓██▒▀█▀ ██▒▒████▄   ▓  ██▒ ▓▒▓█   ▀                                   
-              ▓██  ▒██░▒██░  ▒ ▓██░ ▒░▒██▒▓██    ▓██░▒██  ▀█▄ ▒ ▓██░ ▒░▒███                                     
-              ▓▓█  ░██░▒██░  ░ ▓██▓ ░ ░██░▒██    ▒██ ░██▄▄▄▄██░ ▓██▓ ░ ▒▓█  ▄                                   
-              ▒▒█████▓ ░██████▒▒██▒ ░ ░██░▒██▒   ░██▒ ▓█   ▓██▒ ▒██▒ ░ ░▒████▒                                  
-              ░▒▓▒ ▒ ▒ ░ ▒░▓  ░▒ ░░   ░▓  ░ ▒░   ░  ░ ▒▒   ▓▒█░ ▒ ░░   ░░ ▒░ ░                                  
-              ░░▒░ ░ ░ ░ ░ ▒  ░  ░     ▒ ░░  ░      ░  ▒   ▒▒ ░   ░     ░ ░  ░                                  
-               ░░░ ░ ░   ░ ░   ░       ▒ ░░      ░     ░   ▒    ░         ░                                     
-                 ░         ░  ░        ░         ░         ░  ░           ░  ░                                  
-                                                                                                   
-  ███▄    █  ███▄ ▄███▓ ▄▄▄       ██▓███         ██▓███   ▄▄▄       ██▀███    ██████ ▓█████  ██▀███   
-  ██ ▀█   █ ▓██▒▀█▀ ██▒▒████▄    ▓██░  ██▒      ▓██░  ██▒▒████▄    ▓██ ▒ ██▒▒██    ▒ ▓█   ▀ ▓██ ▒ ██▒ 
- ▓██  ▀█ ██▒▓██    ▓██░▒██  ▀█▄  ▓██░ ██▓▒      ▓██░ ██▓▒▒██  ▀█▄  ▓██ ░▄█ ▒░ ▓██▄   ▒███   ▓██ ░▄█ ▒ 
- ▓██▒  ▐▌██▒▒██    ▒██ ░██▄▄▄▄██ ▒██▄█▓▒ ▒      ▒██▄█▓▒ ▒░██▄▄▄▄██ ▒██▀▀█▄    ▒   ██▒▒▓█  ▄ ▒██▀▀█▄   
- ▒██░   ▓██░▒██▒   ░██▒ ▓█   ▓██▒▒██▒ ░  ░      ▒██▒ ░  ░ ▓█   ▓██▒░██▓ ▒██▒▒██████▒▒░▒████▒░██▓ ▒██▒ 
- ░ ▒░   ▒ ▒ ░ ▒░   ░  ░ ▒▒   ▓▒█░▒▓▒░ ░  ░      ▒▓▒░ ░  ░ ▒▒   ▓▒█░░ ▒▓ ░▒▓░▒ ▒▓▒ ▒ ░░░ ▒░ ░░ ▒▓ ░▒▓░ 
- ░ ░░   ░ ▒░░  ░      ░  ▒   ▒▒ ░░▒ ░           ░▒ ░       ▒   ▒▒ ░  ░▒ ░ ▒░░ ░▒  ░ ░ ░ ░  ░  ░▒ ░ ▒░ 
-    ░   ░ ░ ░      ░     ░   ▒   ░░             ░░         ░   ▒     ░░   ░ ░  ░  ░     ░     ░░   ░  
-          ░        ░         ░  ░                           ░  ░   ░           ░     ░  ░   ░      
-
-Version: 0.5 - 04/04/2019 	Created By: Shifty0g 	https://github.com/shifty0g  	
------------------------------------------------------------------------------------------------------------
 
 [*] Usage: ultimate-nmap-parser.sh [input] [options]
 
@@ -88,11 +74,10 @@ Version: 0.5 - 04/04/2019 	Created By: Shifty0g 	https://github.com/shifty0g
 [options]:
 
 	--help		Show this help menu
-	--all		Runs ALL options - EXCLUDING: report1
+	--all		Runs ALL options - **EXCLUDING: report1, --html**
 	--csv		Create .csv file - parsed_nmap.csv
 	--summary	Create host Summary report - summary.txt
 	--closed	Create Summary of hosts with CLOSED ports - closed-summary.txt
-  	--report1   	Report - IP[PORT1,PORT2,PORT3, ] - parsip.pl
 	--unique	Parse open unique TCP & UDP ports - ports_unique.txt
 	--tcp		Parse open TCP ports - ports_tcp.txt
 	--udp		Parse open UDP ports - ports_udp.txt
@@ -103,6 +88,7 @@ Version: 0.5 - 04/04/2019 	Created By: Shifty0g 	https://github.com/shifty0g
 	--web		Generate web URLS http://IP:PORT https://IP:PORT  - web-urls.txt
 	--ssl		Generate ssl/tls hosts list IP:PORT - ssl.txt
 	--hostports	Generate hosts/hosts_<PORT>-<PROTOCOL>-<SERVICE>.txt files
+  	--report1   	Report - IP[PORT1,PORT2,PORT3, ] - parsip.pl
 
 [*] Example:
 
@@ -110,7 +96,9 @@ ultimate-nmap-parser.sh *.gnmap --all
 ultimate-nmap-parser.sh nmap_tcp_full.gnmp nmap_udp_def.gnmap --summary --unique
 ultimate-nmap-parser.sh nmap_tcp_full.gnmp nmap_udp_def.gnmap --web
 
------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------
+
+
 
 ```
 
