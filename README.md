@@ -470,7 +470,7 @@ Closed Ports For Host: 192.168.0.25
 ```
 
 
-### ./ultimate-nmap-parser.sh *.gnmap --closed
+### ./ultimate-nmap-parser.sh *.gnmap --hostports
 
 ```
 ls  parse/hosts 
