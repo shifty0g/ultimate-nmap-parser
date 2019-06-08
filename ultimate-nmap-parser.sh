@@ -1,7 +1,7 @@
 #!/bin/bash
 fname="ultimate-nmap-parser.sh"
-version="0.5.4"
-modified="05/05/2019"
+version="0.6"
+modified="08/06/2019"
 
 # TO DO:
 # BUG: cant handle paths with spaces. so far the makcsv function doesnt appear to write to temp.csv
@@ -11,8 +11,10 @@ modified="05/05/2019"
 # - 2. more check of input file and exit if cant find open it. if no inputfile - exit
 # - 3. better checks for Up/Down hosts
 # - add check to closed ports if no closed ports than say and dont make file liek the rest
-# - take in xml file do checks and make more vauge... maybe make it pickup from folder location in futue 
+# - take in xml file do checks and make more vauge... maybe make it pickup from folder location in future 
 # - make the output echo out each host file 
+# - better processing output... show lines
+# - need to make the hosts files better .. dont like the output and the same port sometimes has multiple files
 # - lots more work needed on the output bit at the end  maybe use the ifs
 # - make like a log file - time stats. input swtichees used files es.. all stats ports est
 # - fix the output at the end 
@@ -34,7 +36,6 @@ modified="05/05/2019"
 # - add useful features from OLD nmap-parser
 # - change the if statements so that there is an all function so it will set all the varibles on and create the folder. this needs testing too 
 # - TEST TEST TEST TEST TEST and check the output with lots of different scans and make sure it is all accurate. 
-# - more testing .... different sets of files ips est to see 
 
 
 #----------------------------------------------------------------- START OF SCRIPT -----------------------------------------------------------------
@@ -79,7 +80,6 @@ outputreport1file="report1.txt"
 outputclosedsummaryfile="closed-summary.txt"
 
 
-
 # Menu Switches
 men_all="N"
 men_csv="N"
@@ -102,35 +102,21 @@ men_htmlreport="N"
 function header () {
 # header function  - used to print out the title of the script 
 # need a better name i think
-echo "-----------------------------------------------------------------------------------------------------------"
-echo -e "\e[91m\e[1m"
-echo "               █    ██  ██▓  ▄▄▄█████▓ ██▓ ███▄ ▄███▓ ▄▄▄     ▄▄▄█████▓▓█████                                   "
-echo "               ██  ▓██▒▓██▒  ▓  ██▒ ▓▒▓██▒▓██▒▀█▀ ██▒▒████▄   ▓  ██▒ ▓▒▓█   ▀                                   "
-echo "              ▓██  ▒██░▒██░  ▒ ▓██░ ▒░▒██▒▓██    ▓██░▒██  ▀█▄ ▒ ▓██░ ▒░▒███                                     "
-echo "              ▓▓█  ░██░▒██░  ░ ▓██▓ ░ ░██░▒██    ▒██ ░██▄▄▄▄██░ ▓██▓ ░ ▒▓█  ▄                                   "
-echo "              ▒▒█████▓ ░██████▒▒██▒ ░ ░██░▒██▒   ░██▒ ▓█   ▓██▒ ▒██▒ ░ ░▒████▒                                  "
-echo "              ░▒▓▒ ▒ ▒ ░ ▒░▓  ░▒ ░░   ░▓  ░ ▒░   ░  ░ ▒▒   ▓▒█░ ▒ ░░   ░░ ▒░ ░                                  "
-echo "              ░░▒░ ░ ░ ░ ░ ▒  ░  ░     ▒ ░░  ░      ░  ▒   ▒▒ ░   ░     ░ ░  ░                                  "
-echo "               ░░░ ░ ░   ░ ░   ░       ▒ ░░      ░     ░   ▒    ░         ░                                     "
-echo "                 ░         ░  ░        ░         ░         ░  ░           ░  ░                                  "
-echo "                                                                                                   "
-echo "  ███▄    █  ███▄ ▄███▓ ▄▄▄       ██▓███         ██▓███   ▄▄▄       ██▀███    ██████ ▓█████  ██▀███   "
-echo "  ██ ▀█   █ ▓██▒▀█▀ ██▒▒████▄    ▓██░  ██▒      ▓██░  ██▒▒████▄    ▓██ ▒ ██▒▒██    ▒ ▓█   ▀ ▓██ ▒ ██▒ "
-echo " ▓██  ▀█ ██▒▓██    ▓██░▒██  ▀█▄  ▓██░ ██▓▒      ▓██░ ██▓▒▒██  ▀█▄  ▓██ ░▄█ ▒░ ▓██▄   ▒███   ▓██ ░▄█ ▒ "
-echo " ▓██▒  ▐▌██▒▒██    ▒██ ░██▄▄▄▄██ ▒██▄█▓▒ ▒      ▒██▄█▓▒ ▒░██▄▄▄▄██ ▒██▀▀█▄    ▒   ██▒▒▓█  ▄ ▒██▀▀█▄   "
-echo " ▒██░   ▓██░▒██▒   ░██▒ ▓█   ▓██▒▒██▒ ░  ░      ▒██▒ ░  ░ ▓█   ▓██▒░██▓ ▒██▒▒██████▒▒░▒████▒░██▓ ▒██▒ "
-echo " ░ ▒░   ▒ ▒ ░ ▒░   ░  ░ ▒▒   ▓▒█░▒▓▒░ ░  ░      ▒▓▒░ ░  ░ ▒▒   ▓▒█░░ ▒▓ ░▒▓░▒ ▒▓▒ ▒ ░░░ ▒░ ░░ ▒▓ ░▒▓░ "
-echo " ░ ░░   ░ ▒░░  ░      ░  ▒   ▒▒ ░░▒ ░           ░▒ ░       ▒   ▒▒ ░  ░▒ ░ ▒░░ ░▒  ░ ░ ░ ░  ░  ░▒ ░ ▒░ "
-echo "    ░   ░ ░ ░      ░     ░   ▒   ░░             ░░         ░   ▒     ░░   ░ ░  ░  ░     ░     ░░   ░  "
-echo "          ░        ░         ░  ░                           ░  ░   ░           ░     ░  ░   ░      "                                                                                                        
-echo -e "\e[39m"																				 
-echo -e "\e[96mVersion: $version - $modified 	Created By: Shifty0g 	https://github.com/shifty0g  \e[39m	" 
-echo "-----------------------------------------------------------------------------------------------------------"
+echo -e "\e[1m	_  _ _    ___ _ _  _ ____ ___ ____    _  _ _  _ ____ ___  "  
+echo "	|  | |     |  | |\/| |__|  |  |___    |\ | |\/| |__| |__] "  
+echo "	|__| |___  |  | |  | |  |  |  |___    | \| |  | |  | |    "  
+echo "			___  ____ ____ ____ ____ ____                   "                                    
+echo "			|__] |__| |__/ [__  |___ |__/                   "      
+echo "			|    |  | |  \ ___] |___ |  \                   "
+echo "			                                                "
+echo -e "\e[39m\e[0m\e[96mVersion: $version - $modified" 																				 
+echo -e "Created By: Shifty0g 	https://github.com/shifty0g  \e[39m"
+echo ""
 }
 
 function footer () {
 # footer to print out at the end of the script 
-echo "-----------------------------------------------------------------------------------------------------------"
+echo "--------------------------------------------------------------------------------------"
 echo "				           ___                           "
 echo "				  _  _  .-'   '-.                        "
 echo "				 (.)(.)/         \                       "
@@ -142,6 +128,7 @@ echo
 
 function helpmenu () {
 # prints out the header and help menu when --help switch is selected to show the options to use 
+header
 echo 
 echo "[*] Usage: $fname [input] [options]"
 echo
@@ -165,7 +152,7 @@ echo "	--web		Generate web URLS http://IP:PORT https://IP:PORT  - $outputwebfile
 echo "	--ssl		Generate ssl/tls hosts list IP:PORT - $outputsslfile"
 echo "	--hostports	Generate hosts/hosts_<PORT>-<PROTOCOL>-<SERVICE>.txt files"
 #echo "	--html		Generates a .html report for each scan (uses xml file - will auto pickup from \$pwd)"
-echo "  --report1   	Report - IP[PORT1,PORT2,PORT3, ] - parsip.pl" 
+echo "  	--report1   	Report - IP[PORT1,PORT2,PORT3, ] - parsip.pl" 
 echo 
 echo -e "\e[39m[*] Example:"
 echo 
@@ -173,9 +160,8 @@ echo "$fname *.gnmap --all"
 echo "$fname nmap_tcp_full.gnmp nmap_udp_def.gnmap --summary --unique"
 echo "$fname nmap_tcp_full.gnmp nmap_udp_def.gnmap --web"
 echo
-echo "-----------------------------------------------------------------------------------------------------------"
+echo "--------------------------------------------------------------------------------------"
 echo
-exit
 }
 
 function diagnostics () {
@@ -198,8 +184,6 @@ function mastercleanup () {
 # MASTER cleanup - lazy just to wipe the temp stuff before and after soo all fresh
 rm "${outpath}tempinput" "${outpath}ipptemp" "${outpath}closedtemp" "${outpath}summtemp" "${outpath}tempfile" "${outpath}tempfile2" "${outpath}$varTempFile2" "${outpath}inputfile" "${outpath}$varTempFile" "${outpath}$tempfile" "${outpath}$varSummTempFile" "${outpath}webtemp" "${outpath}webtemp2" "${hostportspath}hostptemp" "${outpath}$inputtemp" "${outpath}$inputtemp "${outputpath}$csvtemp > /dev/null 2>&1
 }
-
-
 
 function makecsv () {
 # this is the main function which processes the inputfile and creates a csv file 
@@ -545,14 +529,68 @@ for line in $(cat "$tempfile"); do
 	port=$(echo $line | awk -F ',' '{print $2}')
 	proto=$(echo $line | awk -F ',' '{print $4}')
 	service=$(echo $line | awk -F ',' '{print $5}' | tr -d '-' | tr -d '?' | tr -d '|' )
-	# need to add better service names	
-	echo $host >> "$hostportspath"/"$proto"_"$port-$service.txt"
+	# need to add better service names
+	
+	# check and tidy for consistancy
+	printout="Y"
+	if [ "$service" == "microsoftds" ]; then
+		service="smb"
+	elif [ "$port" == 161 ]; then
+		service="snmp"			
+	elif [ "$port" == 79 ]; then
+		service="finger"
+	elif [ "$port" == 25 ]; then
+		service="smtp"	
+	elif [ "$port" == 21 ]; then
+		service="ftp"	
+	elif [ "$port" == 2049 ]; then
+		service="nfs"
+	elif [ "$port" == 22 ]; then
+		service="ssh"
+	elif [ "$port" == 23 ]; then
+		service="telnet"
+	elif [ "$port" == 111 ]; then
+		service="rpc"
+	elif [ "$port" == 2049 ]; then
+		service="nfs"
+	elif [ "$port" == 3389 ]; then
+		service="rdp"
+	elif [ "$port" == 53 ]; then
+		service="dns"			
+	elif [ "$port" == 113 ]; then
+		service="nfs"
+	elif [ "$port" == 5432 ]; then
+		service="postgres"	
+	elif [ "$port" == 3306 ]; then
+		service="mysql"
+	elif [ "$port" == 1433 ]; then
+		service="mssql"			
+	elif [ "$port" == 443 ]; then
+		service="https"
+	elif [ "$port" == 80 ]; then
+		service="http"
+	elif [ "$port" == 636 ]; then
+		service="ldap"		
+	elif [ "$service" == "msrpc" ]; then
+		# dont print out msrpc ..pointless - stop the spam
+		printout="N"	
+	elif [ "$proto" == "udp" ] && [ "$service" == "unknown" ]; then
+		# dont udp + unknown ... cant really do much with this - stop spam
+		printout="N"		
+	elif [ -z "$service" ]; then
+		# dont udp + unknown ... cant really do much with this - stop spam
+		printout="N"	
+	fi
+	
+	
+	# print out the IP in port files
+	if [ "$printout" == "Y" ]; then
+		echo $host >> "$hostportspath"/"$proto"_"$port-$service.txt"		
+	fi	
 done
-
 
 #function cleanup
 rm  "${hostportspath}/_-.txt" "$tempfile" > /dev/null 2>&1
-
 
 echo "	- "${outhostsdir}"/[PROTOCOL]_[PORT]-[SERVICE].txt"
 echo
@@ -581,7 +619,6 @@ echo
 
 #end
 }
-
 
 function htmlreport () {
 # Experminetal and made just 
@@ -649,7 +686,7 @@ then
 		if [ "$men_ssl" == "Y" ]; then cat "${outpath}$outputsslfile" 2> /dev/null; fi
 		if [ "$men_closed" == "Y" ]; then cat "${outpath}$outputclosedsummaryfile" 2> /dev/null; fi
 		if [ "$men_report1" == "Y" ]; then cat "${outpath}$outputreport1file" 2> /dev/null; fi
-		if [ "$men_hostports" == "Y" ]; then  more "${hostportspath}/hosts_"*.txt 2> /dev/null; fi
+		if [ "$men_hostports" == "Y" ]; then more "${hostportspath}"/*_*.txt 2> /dev/null; fi
 	fi
 fi
 #end
@@ -671,9 +708,9 @@ for word in $(echo $*); do
 		cat "$(realpath $word)" | sort -V >> $inputtemp
 	fi
 	if [ $word == "--help" ]; then
-		header
 		helpmenu
 		switch+="$word"
+		exit
 	fi
 	if [ $word == "--csv" ]; then
 		men_csv="Y"
@@ -765,10 +802,10 @@ done
 
 # does some checks on the input file to make sure its .gnmap + inspects the file to see its finished and has the right output flags -oA or -oG	
 if [ -z "$(file "$(realpath $inputtemp)" | grep -o -e ASCII && head "$(realpath $inputtemp)" | grep -o -e "\-oA" -e "\-oG" && cat "$(realpath $inputtemp)")" ]; then
-	echo 	 	
+	helpmenu
+	echo
 	echo -e "\e[1m\e[91m[X] No input files FOUND - \e[5m.gnmap \e[25mfilename required - Must be nmap grepable! [X]\e[0m"
   	echo 
-  	helpmenu
 	exit 
 fi
 
@@ -777,18 +814,15 @@ fi
 # check valid switches
 if [ -z "$switch" ] 
 then
-	  #header
+	  helpmenu
 	  echo 
       echo -e "\e[1m\e[91m[X] No Valid Switches FOUND - --csv, --all, etc.. [X]\e[0m"
 	  echo 
-	  helpmenu
 	  exit  
 fi
 
-                                        
-header
-echo 
-
+header 
+                                      
 # if all is selected make the outdir folder - stop the spam
 if [ "$createoutdir" == "Y" ]
 then 
