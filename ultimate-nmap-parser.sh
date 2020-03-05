@@ -1,7 +1,7 @@
 #!/bin/bash
 fname="ultimate-nmap-parser.sh"
-version="0.6"
-modified="08/06/2019"
+version="0.8"
+modified="05/03/2020"
 
 # TO DO:
 # BUG: cant handle paths with spaces. so far the makcsv function doesnt appear to write to temp.csv
@@ -10,10 +10,13 @@ modified="08/06/2019"
 # - 1. check if tcp,udp,unique,up and down files are empty - if empty then say 
 # - 2. more check of input file and exit if cant find open it. if no inputfile - exit
 # - 3. better checks for Up/Down hosts
+# - improve web-urls to check for http/https properly 
 # - add check to closed ports if no closed ports than say and dont make file liek the rest
 # - take in xml file do checks and make more vauge... maybe make it pickup from folder location in future 
 # - make the output echo out each host file 
+# - improve closed ports - make a nice table 
 # - better processing output... show lines
+# - create a vesions file  of all the versions which can be looked up
 # - need to make the hosts files better .. dont like the output and the same port sometimes has multiple files
 # - lots more work needed on the output bit at the end  maybe use the ifs
 # - make like a log file - time stats. input swtichees used files es.. all stats ports est
@@ -36,6 +39,12 @@ modified="08/06/2019"
 # - add useful features from OLD nmap-parser
 # - change the if statements so that there is an all function so it will set all the varibles on and create the folder. this needs testing too 
 # - TEST TEST TEST TEST TEST and check the output with lots of different scans and make sure it is all accurate. 
+
+# add parse out versions of stuff and look them up
+# remove duplicates in hosts files 
+# summary seems to show duplicates too 
+# fix web parsing - seems to pickup 3389 - look @ CBS
+# unqiue all the hosts bit 
 
 
 #----------------------------------------------------------------- START OF SCRIPT -----------------------------------------------------------------
@@ -217,7 +226,7 @@ done < "${outpath}$inputtemp"
 if [ -f "${outpath}$csvtemp" ]; then
    echo "HOST,PORT,STATUS,PROTOCOL,SERVICE,VERSION" > "${outpath}$outputcsvfile" 
    # sort by ip address - 1st.2nd.3rd.4th
-   cat "${outpath}"temp.csv"" | sort -t"," -n -k1 | $sortip >> "${outpath}$outputcsvfile" 
+   cat "${outpath}"temp.csv"" |  sort -u | sort -t"," -n -k1 | $sortip >> "${outpath}$outputcsvfile" 
    echo "	- $outputcsvfile"
 fi
 
@@ -313,7 +322,7 @@ echo
 function uphosts () {
 # creates a file with IPs for hosts with Up Statues - needs further checks to be better 
 echo -e "\e[1m\e[93m[>]\e[0m Parsing up hosts"
-cat "$inputfilepath" | grep -e 'Status: Up' -e '/open/' | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b" | sort -u -V  > "$outpath$outputupfile" 
+cat "$inputfilepath" | grep -e 'Status: Up' -e '/open/' |  awk '{ print $2 }' | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b" | sort -u -V  > "$outpath$outputupfile" 
 
 # check if there are actually any IP addresses in the file - if not delete it no point 
 if [ -z "$(cat "${outpath}$outputupfile" | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b")" ]
@@ -332,7 +341,7 @@ echo
 function downhosts () {
 # creates a file with IPs for hosts with Down status 
 echo -e "\e[1m\e[93m[>]\e[0m Parsing down hosts"
-cat "$inputfilepath" | grep 'Status: Down' | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b" | sort -u -V > "${outpath}$outputdownfile"
+cat "$inputfilepath" | grep -e 'Status: Down' | awk '{ print $2 }' | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b" | sort -u -V > "${outpath}$outputdownfile"
 
 # check if there are actually any IP addresses in the file - if not delete it no point 
 if [ -z "$(cat "${outpath}$outputdownfile" | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b")" ]
@@ -406,7 +415,7 @@ function smb () {
 # createa file for URI smb://192.168.1.1 
 # will only grab out OPEN 445 TCP 
 echo -e "\e[1m\e[93m[>]\e[0m Creating smb paths"
-cat "$inputfilepath" | grep '445/open/tcp/' | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b" | sed -e 's/^/smb:\/\//' | sort -u | $sortip | sort -t'/' -k2 -V  > "${outpath}$outputsmbfile"
+cat "$inputfilepath" | grep '445/open/tcp/' | awk '{ print $2}' | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b" | sed -e 's/^/smb:\/\//' | sort -u | $sortip | sort -t'/' -k2 -V  > "${outpath}$outputsmbfile"
 
 # check for a smb:// if the file has them then likely has ports in  
 if [ -z "$(cat "${outpath}$outputsmbfile" | grep 'smb://')" ]
@@ -531,14 +540,12 @@ for line in $(cat "$tempfile"); do
 	service=$(echo $line | awk -F ',' '{print $5}' | tr -d '-' | tr -d '?' | tr -d '|' )
 	# need to add better service names
 	
-	# check and tidy for consistancy
+	# check and tidy up the names for consistancy and to stop spam duplicates
 	printout="Y"
-	if [ "$service" == "microsoftds" ]; then
+	if [ "$port" == 445 ]; then
 		service="smb"
 	elif [ "$port" == 161 ]; then
 		service="snmp"			
-	elif [ "$port" == 79 ]; then
-		service="finger"
 	elif [ "$port" == 25 ]; then
 		service="smtp"	
 	elif [ "$port" == 21 ]; then
@@ -551,14 +558,18 @@ for line in $(cat "$tempfile"); do
 		service="telnet"
 	elif [ "$port" == 111 ]; then
 		service="rpc"
-	elif [ "$port" == 2049 ]; then
-		service="nfs"
+	elif [ "$port" == 137 ]; then
+		service="netbios"
+	elif [ "$port" == 139 ]; then
+		service="netbios"
 	elif [ "$port" == 3389 ]; then
 		service="rdp"
 	elif [ "$port" == 53 ]; then
 		service="dns"			
 	elif [ "$port" == 113 ]; then
-		service="nfs"
+		service="ident"
+	elif [ "$port" == 79 ]; then
+		service="finger"
 	elif [ "$port" == 5432 ]; then
 		service="postgres"	
 	elif [ "$port" == 3306 ]; then
@@ -570,7 +581,11 @@ for line in $(cat "$tempfile"); do
 	elif [ "$port" == 80 ]; then
 		service="http"
 	elif [ "$port" == 636 ]; then
-		service="ldap"		
+		service="ldap"	
+	elif [ "$proto" == "udp" ] && [ "$port" == 161 ]; then
+		service="snmp"	
+	elif [ "$proto" == "udp" ] && [ "$port" == 177 ]; then
+		service="xdmcp"	
 	elif [ "$service" == "msrpc" ]; then
 		# dont print out msrpc ..pointless - stop the spam
 		printout="N"	
@@ -599,7 +614,7 @@ echo
 
 function closedsummary() {
 # creates a little report of hosts with closed ports
-echo -e "\e[1m\e[93m[>]\e[0m Generating  Closed Ports Summary"
+echo -e "\e[1m\e[93m[>]\e[0m Generating Closed Ports Summary"
 
 rm "${outpath}$outputclosedsummaryfile" > /dev/null 2>&1
 for host in $(cat "$inputfilepath" | grep "Host:" | grep "\/closed\/" | awk '{ print $2}'| sort --unique); do # will go through each host
@@ -663,9 +678,14 @@ function printresults() {
 # will print out the files generated at the end
 
 # if yes will print the output - maybe flip this around so ENTER is for yes
-echo 
-read -p "[-] Display Output? <ENTER = YES / Anything else = NO> : " prompt
-echo
+
+# COMMENTED THIS OUT FOR EXAM
+#echo 
+#read -p "[-] Display Output? <ENTER = YES / Anything else = NO> : " prompt
+#echo
+prompt="Y"
+men_all="Y"
+
 if [ -z "$prompt" ]
 then
 	if [ $men_all == "Y" ]
