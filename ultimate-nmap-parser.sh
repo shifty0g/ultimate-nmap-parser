@@ -1,6 +1,6 @@
 #!/bin/bash
 fname="ultimate-nmap-parser.sh"
-version="0.8"
+version="0.9"
 modified="05/03/2020"
 
 # TO DO:
@@ -85,6 +85,7 @@ outputudpfile="ports_udp.txt"
 outputsmbfile="smb.txt"
 outputwebfile="web-urls.txt"
 outputsslfile="ssl.txt"
+outputsshfile="ssh.txt"
 outputreport1file="report1.txt"
 outputclosedsummaryfile="closed-summary.txt"
 
@@ -101,6 +102,7 @@ men_downhosts="N"
 men_ipport="N"
 men_smb="N"
 men_ssl="N"
+men_ssh="N"
 men_web="N"
 men_hostports="N"
 men_closed="N"
@@ -159,6 +161,7 @@ echo "	--ipport	Parse targets IP:PORT - $outputipfile"
 echo "	--smb		Generate smb paths smb://IP - $outputsmbfile"
 echo "	--web		Generate web URLS http://IP:PORT https://IP:PORT  - $outputwebfile"
 echo "	--ssl		Generate ssl/tls hosts list IP:PORT - $outputsslfile"
+echo "	--ssh		Generate ssh hosts list IP:PORT - $outputsshfile"
 echo "	--hostports	Generate hosts/hosts_<PORT>-<PROTOCOL>-<SERVICE>.txt files"
 #echo "	--html		Generates a .html report for each scan (uses xml file - will auto pickup from \$pwd)"
 echo "  	--report1   	Report - IP[PORT1,PORT2,PORT3, ] - parsip.pl" 
@@ -190,8 +193,8 @@ echo "##########################################################################
 }
 
 function mastercleanup () {
-# MASTER cleanup - lazy just to wipe the temp stuff before and after soo all fresh
-rm "${outpath}tempinput" "${outpath}ipptemp" "${outpath}closedtemp" "${outpath}summtemp" "${outpath}tempfile" "${outpath}tempfile2" "${outpath}$varTempFile2" "${outpath}inputfile" "${outpath}$varTempFile" "${outpath}$tempfile" "${outpath}$varSummTempFile" "${outpath}webtemp" "${outpath}webtemp2" "${hostportspath}hostptemp" "${outpath}$inputtemp" "${outpath}$inputtemp "${outputpath}$csvtemp > /dev/null 2>&1
+# MASTER cleanup - lazy just to wipe the temp stuff before and after so all fresh
+rm "${outpath}tempinput" "${outpath}ipptemp" "${outpath}closedtemp" "${outpath}summtemp" "${outpath}tempfile" "${outpath}tempfile2" "${outpath}$varTempFile2" "${outpath}inputfile" "${outpath}$varTempFile" "${outpath}$tempfile" "${outpath}$varSummTempFile" "${outpath}webtemp" "${outpath}webtemp2" "${hostportspath}hostptemp" "${outpath}$inputtemp" "${outpath}$inputtemp" "${outpath}$csvtemp" "${outpath}sshtemp"> /dev/null 2>&1
 }
 
 function makecsv () {
@@ -238,7 +241,7 @@ echo
 }
 
 function checkcsv () {
-# checks if the makecsv fu nction has already ran and then sets the tempfile varible - stops repition as most other functions use the csv file 
+# checks if the makecsv function has already ran and then sets the tempfile varible - stops repetition as most other functions use the csv file 
 if [ "$men_csv" == "Y" ]
 then
 	cp "${outpath}$outputcsvfile" "${outpath}$csvtemp"
@@ -517,6 +520,42 @@ echo
 #end
 }
 
+function ssh () {
+echo -e "\e[1m\e[93m[>]\e[0m Creating ssh list"
+
+# start fresh
+rm "${outpath}$outputsshfile" "${outpath}sshtemp" > /dev/null 2>&1
+
+# check that the csv file has been created
+checkcsv
+
+for line in $(cat "$tempfile"); do
+	host=$(echo $line | awk -F ',' '{print $1}')
+	port=$(echo $line | awk -F ',' '{print $2}')
+	service=$(echo $line | awk -F ',' '{print $5}')
+	version=$(echo $line | awk -F ',' '{print $6}')
+	
+	if [[ "$port" -eq "22" ]]; then echo "${host}:${port}" >> "${outpath}sshtemp"; fi
+	if [[ "$service" == *"ssh"* ]]; then echo "${host}:${port}" >> "${outpath}sshtemp"; fi
+	if [[ "$version" == *"ssh"* ]]; then echo "${host}:${port}" >> "${outpath}sshtemp"; fi
+done
+
+# sort and export
+if [ -f "${outpath}sshtemp" ]; then
+	sort -u "${outpath}sshtemp" | $sortip > "${outpath}$outputsshfile" 2>&1
+	echo "	- $outputsshfile"
+else
+	echo -e "$RED	- no ports found $RESETCOL"
+	rm "${outpath}$outputsshfile" > /dev/null 2>&1
+fi
+
+# cleanup
+rm "${outpath}sshtemp" "$tempfile" > /dev/null 2>&1
+echo
+
+# end
+}
+
 function hostports () {
 # will create a folder hosts and generate ip lists for each open ports for example 80 http will be hosts/hosts_80-tcp-http.txt
 # need to reqord some fo the service names to make them a little better 
@@ -704,6 +743,7 @@ then
 		if [ "$men_smb" == "Y" ]; then cat "${outpath}$outputsmbfile" 2> /dev/null; fi
 		if [ "$men_web" == "Y" ]; then cat "${outpath}$outputwebfile" 2> /dev/null; fi
 		if [ "$men_ssl" == "Y" ]; then cat "${outpath}$outputsslfile" 2> /dev/null; fi
+		if [ "$men_ssh" == "Y" ]; then cat "${outpath}$outputsshfile" 2> /dev/null; fi
 		if [ "$men_closed" == "Y" ]; then cat "${outpath}$outputclosedsummaryfile" 2> /dev/null; fi
 		if [ "$men_report1" == "Y" ]; then cat "${outpath}$outputreport1file" 2> /dev/null; fi
 		if [ "$men_hostports" == "Y" ]; then more "${hostportspath}"/*_*.txt 2> /dev/null; fi
@@ -792,6 +832,10 @@ for word in $(echo $*); do
 		men_htmlreport="Y"
 		switch+="$word"
 	fi	
+	if [ $word == "--ssh" ]; then
+		men_ssh="Y"
+		switch+="$word"
+	fi
 	if [ $word == "--all" ]; then
 		#include 
 		men_all="Y"
@@ -808,6 +852,7 @@ for word in $(echo $*); do
 		men_web="Y"
 		men_hostports="Y"
 		men_closed="Y"
+		men_ssh="Y"
 		
 		#exclude
 		men_report1="N"
@@ -871,12 +916,11 @@ if [ "$men_downhosts" == "Y" ]; then downhosts; fi
 if [ "$men_smb" == "Y" ]; then smb; fi
 if [ "$men_web" == "Y" ]; then web; fi
 if [ "$men_ssl" == "Y" ]; then ssl; fi
+if [ "$men_ssh" == "Y" ]; then ssh; fi
 if [ "$men_hostports" == "Y" ]; then hostports; fi
 if [ "$men_closed" == "Y" ]; then closedsummary; fi
 if [ "$men_report1" == "Y" ]; then report1; fi
 if [ "$men_htmlreport" == "Y" ]; then htmlreport; fi
-
-
 
 
 # print footer once completed 
@@ -895,7 +939,5 @@ mastercleanup
 
 # exit 
 exit 0
-
-
 
 #----------------------------------------------------------------- END OF SCRIPT -----------------------------------------------------------------
