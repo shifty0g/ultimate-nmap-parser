@@ -1,54 +1,58 @@
 #!/bin/bash
 fname="ultimate-nmap-parser.sh"
 version="0.8"
-modified="05/03/2020"
+modified="04/06/2025"
 
-# TO DO:
-# BUG: cant handle paths with spaces. so far the makcsv function doesnt appear to write to temp.csv
-#      **THINK I FIXED THIS -- Need lots more testing. go through and parse last projectes
-# --------------------
-# - 1. check if tcp,udp,unique,up and down files are empty - if empty then say 
-# - 2. more check of input file and exit if cant find open it. if no inputfile - exit
-# - 3. better checks for Up/Down hosts
-# - improve web-urls to check for http/https properly 
-# - add check to closed ports if no closed ports than say and dont make file liek the rest
-# - take in xml file do checks and make more vauge... maybe make it pickup from folder location in future 
-# - make the output echo out each host file 
-# - improve closed ports - make a nice table 
-# - better processing output... show lines
-# - create a vesions file  of all the versions which can be looked up
-# - need to make the hosts files better .. dont like the output and the same port sometimes has multiple files
-# - lots more work needed on the output bit at the end  maybe use the ifs
-# - make like a log file - time stats. input swtichees used files es.. all stats ports est
-# - fix the output at the end 
-# - better error handling 
-# - need to check if there is nothing in the file then delete it and sate no hosts
-# - output stating what files been picked up ...list them out ?
-# - fix and check ssl function
-# - closed ports needs sorting 
-# - sort the port files - tcp, udp, unique
-# - have a bit at the end to print the output of files
-# - use less temp files try and keep things consistant in oneliner
-# - tidy up the script make it organised
-# - give the functions desicriptions so know what they are doing 
-# - renames the hosts services for indvidual port file ftp,telnet,ssl,web,http/https/ssl,mysql,oracle,mssql,smb,snmp....est so they are a bit bteer 
-# - create some error checking. file checks for each function. main file checks. fix the switches 
-# - test every switch and options
-# - stop reusing code. make functions for repeats
-# - better input checks. all runs first - giant if statemnt to check switches are valid first
-# - add useful features from OLD nmap-parser
-# - change the if statements so that there is an all function so it will set all the varibles on and create the folder. this needs testing too 
-# - TEST TEST TEST TEST TEST and check the output with lots of different scans and make sure it is all accurate. 
+: '
+TO DO:
+BUG: cant handle paths with spaces. so far the makcsv function doesnt appear to write to temp.csv
+     **THINK I FIXED THIS -- Need lots more testing. go through and parse last projectes
 
-# add parse out versions of stuff and look them up
-# remove duplicates in hosts files 
-# summary seems to show duplicates too 
-# fix web parsing - seems to pickup 3389 - look @ CBS
-# unqiue all the hosts bit 
+--------------------
+- 1. check if tcp,udp,unique,up and down files are empty - if empty then say 
+- 2. more check of input file and exit if cant find open it. if no inputfile - exit
+- 3. better checks for Up/Down hosts
+- improve web-urls to check for http/https properly . dont parse out udp .. chaneg the name to urls .. rebuild this to make it more accurate
+- add check to closed ports if no closed ports than say and dont make file liek the rest
+- include modules from other tools  in the pack 
+- take in xml file do checks and make more vauge... maybe make it pickup from folder location in future 
+- make the output echo out each host file 
+- improve closed ports - make a nice table 
+- closed ports so they are a table .. csv?
+- better processing output... show lines
+- create a vesions file  of all the versions which can be looked up
+- need to make the hosts files better .. dont like the output and the same port sometimes has multiple files
+- lots more work needed on the output bit at the end  maybe use the ifs
+- make like a log file - time stats. input swtichees used files es.. all stats ports est
+- fix the output at the end 
+- better error handling 
+- need to check if there is nothing in the file then delete it and sate no hosts
+- output stating what files been picked up ...list them out ?
+- fix and check ssl function
+- closed ports needs sorting 
+- sort the port files - tcp, udp, unique
+- have a bit at the end to print the output of files
+- use less temp files try and keep things consistant in oneliner
+- tidy up the script make it organised
+- give the functions desicriptions so know what they are doing 
+- renames the hosts services for indvidual port file ftp,telnet,ssl,web,http/https/ssl,mysql,oracle,mssql,smb,snmp....est so they are a bit bteer 
+- create some error checking. file checks for each function. main file checks. fix the switches 
+- test every switch and options
+- stop reusing code. make functions for repeats
+- better input checks. all runs first - giant if statemnt to check switches are valid first
+- add useful features from OLD nmap-parser
+- change the if statements so that there is an all function so it will set all the varibles on and create the folder. this needs testing too 
+- TEST TEST TEST TEST TEST and check the output with lots of different scans and make sure it is all accurate. 
+
+add parse out versions of stuff and look them up
+remove duplicates in hosts files 
+summary seems to show duplicates too 
+fix web parsing - seems to pickup 3389 - look @ CBS
+unqiue all the hosts bit 
 
 
 #----------------------------------------------------------------- START OF SCRIPT -----------------------------------------------------------------
-
+'
 
 # colours - https://misc.flogisoft.com/bash/tip_colors_and_formatting
 RED='\e[91m'
@@ -83,10 +87,15 @@ outputuniquefile="ports_unique.txt"
 outputtcpfile="ports_tcp.txt"
 outputudpfile="ports_udp.txt"
 outputsmbfile="smb.txt"
-outputwebfile="web-urls.txt"
+outputwebfile="urls.txt"
+outputwebfile2="urls-dirty.txt"
 outputsslfile="ssl.txt"
 outputreport1file="report1.txt"
 outputclosedsummaryfile="closed-summary.txt"
+
+outputudpfileextra="ports_tcp_extra.txt"
+outputtcpfileextra="ports_udp_extra.txt"
+
 
 
 # Menu Switches
@@ -106,7 +115,7 @@ men_hostports="N"
 men_closed="N"
 men_report1="N"
 men_htmlreport="N"
-
+men_summarylog="N"
 
 function header () {
 # header function  - used to print out the title of the script 
@@ -161,6 +170,7 @@ echo "	--web		Generate web URLS http://IP:PORT https://IP:PORT  - $outputwebfile
 echo "	--ssl		Generate ssl/tls hosts list IP:PORT - $outputsslfile"
 echo "	--hostports	Generate hosts/hosts_<PORT>-<PROTOCOL>-<SERVICE>.txt files"
 #echo "	--html		Generates a .html report for each scan (uses xml file - will auto pickup from \$pwd)"
+echo "	--summarylog		Parses all local *.log file and creats ip:port/proto file - summary.log"
 echo "  	--report1   	Report - IP[PORT1,PORT2,PORT3, ] - parsip.pl" 
 echo 
 echo -e "\e[39m[*] Example:"
@@ -389,6 +399,50 @@ else
 fi
 echo
 
+tcpports-extra 
+# end  
+}
+
+function tcpports-extra () {
+# creates a file of unqiue open TCP ports - 22,23,80,443...
+echo -e "\e[1m\e[93m[>]\e[0m Parsing tcp ports - adding extras"
+cat "$inputfilepath" | grep '/tcp/' | grep -o -P '.{0,9}/open/' | awk '{ print $2}' | cut -d /  -f 1 | sort -u -V | paste -s -d, 2>&1 > "${outpath}$outputtcpfileextra";
+
+# check for a number if the file has them then likely has ports in  
+if [ -z "$(cat "${outpath}$outputtcpfileextra" |  grep '[0-9]')" ]
+then
+	  echo -e "$RED	- no TCP ports $RESETCOL"
+	  rm "${outpath}$outputtcpfileextra" > /dev/null 2>&1
+else
+	export EXTRA_TCP="$(cat $outputtcpfileextra 2>/dev/null),21,22,23,25,26,53,80,81,88,110,111,113,135,136,137,138,139,143,179,199,389,443,4444,445,4500,464,465,500,514,515,548,554,587,593,646,749,750,751,752,753,754,761,993,995,1025,1026,1027,1080,1194,1433,1720,1723,2000,2001,2222,2375,2376,25565,3000,3120,3128,3268,3269,3306,3389,4444,47001,49152,49154,49751,5000,5060,50911,5666,5900,5901,5902,5903,5985,5986,6001,6443,8080,8081,8088,8443,8500,8888,9200,9300,9999,10000,10250"  
+	export EXTRA_TCP="$(echo $EXTRA_TCP | tr ',' '\n' | sort -u -V | paste -s -d,)"
+	echo $EXTRA_TCP > ${outpath}$outputtcpfileextra
+
+    echo "	- $outputtcpfileextra"
+fi
+echo
+}
+
+function udpports-extra () {
+echo -e "\e[1m\e[93m[>]\e[0m Parsing udp ports - adding extras"
+cat "$inputfilepath" | grep '/tcp/' | grep -o -P '.{0,9}/open/' | awk '{ print $2}' | cut -d /  -f 1 | sort -u -V | paste -s -d, 2>&1 > "${outpath}$outputudpfileextra";
+
+# check for a number if the file has them then likely has ports in  
+if [ -z "$(cat "${outpath}$outputudpfileextra" |  grep '[0-9]')" ]
+then
+	  echo -e "$RED	- no UDP ports $RESETCOL"
+	  rm "${outpath}$outputudpfileextra" > /dev/null 2>&1
+else
+	export EXTRA_UDP="$(cat ${outpath}$outputudpfileextra)53,67,68,69,123,137,138,161,162,500,514,520,623,1434,1701,1900,2049,3478,3479,3702,4500,5060,5061,5353,5683,6000,61000,33434,11211,1194,37017,41641,47998,49152,51820,5355,64738,8125,10001"
+	export EXTRA_UDP="$(echo $EXTRA_UDP | tr ',' '\n' | sort -u -V | paste -s -d,)"
+	echo $EXTRA_UDP > ${outpath}$outputudpfileextra
+
+    echo "	- $outputudpfileextra"
+fi
+echo
+
+
+
 
 # end  
 }
@@ -408,6 +462,7 @@ else
 fi
 echo
 
+udpports-extra 
 # end 
 }
 
@@ -440,6 +495,7 @@ rm "${outpath}$webfinalname" "${outpath}webtemp2"  > /dev/null 2>&1
 #check that the csv file has been created
 checkcsv
 
+# NEED To check that its not UDP 
 for line in $(cat "$tempfile"); do
 	host=$(echo $line | awk -F ',' '{print $1}')
 	port=$(echo $line | awk -F ',' '{print $2}')
@@ -449,8 +505,9 @@ for line in $(cat "$tempfile"); do
 	# a little overboard with the checks just to make sure all web ports are collected
 	if [ "$port" = "80" ]; then echo "http://${host}:$port/" >> "${outpath}webtemp2"; fi
    	if [ "$port" = "443" ]; then echo "https://${host}:$port/" >> "${outpath}webtemp2"; fi
-    	if [ "$port" = "8080" ]; then echo "http://${host}:$port/" >> "${outpath}webtemp2"; fi
-    	if [ "$port" = "8443" ]; then echo "https://${host}:$port/" >> "${outpath}webtemp2"; fi
+    if [ "$port" = "8080" ]; then echo "http://${host}:$port/" >> "${outpath}webtemp2"; fi
+    if [ "$port" = "8443" ]; then echo "https://${host}:$port/" >> "${outpath}webtemp2"; fi
+	
 	if [ "$service" = "http" ]; then echo "http://${host}:$port/" >> "${outpath}webtemp2"; fi
 	if [[ "$service" == *"ssl"* ]]; then echo "https://${host}:$port/" >> "${outpath}webtemp2"; fi
 	if [[ "$version" == *"Web"* ]]; then echo "http://${host}:$port/" >> "${outpath}webtemp2"; fi
@@ -468,10 +525,152 @@ fi
 
 #cleanup
 rm "${outpath}webtemp2" "$tempfile"  > /dev/null 2>&1
-
-echo
+echo ""
 
 #end
+}
+
+function webdirty () {
+# this will get urls all differnt ways and even from the log file .. its messy and dirty
+# make a file of URLS to use with tools like nikto wafwoof est
+echo -e "\e[1m\e[93m[>]\e[0m Creating web URLS (dirty  **NEED TO FIX**)"
+
+
+#check that the csv file has been created
+checkcsv
+
+# start fresh
+rm "${outpath}$webfinalname" "${outpath}webtemp1"  "${outpath}webtemp2" "${outpath}webtemp3" "${outpath}outputwebfile2" /tmp/we*.txt  > /dev/null 2>&1
+
+
+# NEED To check that its not UDP 
+for line in $(cat "$tempfile"); do
+	host=$(echo $line | awk -F ',' '{print $1}')
+	port=$(echo $line | awk -F ',' '{print $2}')
+	service=$(echo $line | awk -F ',' '{print $5}')
+	version=$(echo $line | awk -F ',' '{print $6}')
+	
+	## a little overboard with the checks just to make sure all web ports are collected
+	if [ "$port" = "80" ]; then echo "http://${host}:$port/" >> "${outpath}webtemp1"; fi
+   	if [ "$port" = "443" ]; then echo "https://${host}:$port/" >> "${outpath}webtemp1"; fi
+    if [ "$port" = "8080" ]; then echo "http://${host}:$port/" >> "${outpath}webtemp1"; fi
+    if [ "$port" = "8443" ]; then echo "https://${host}:$port/" >> "${outpath}webtemp1"; fi
+    if [ "$port" = "8000" ]; then echo "http://${host}:$port/" >> "${outpath}webtemp1"; fi
+
+
+	ports=(80 443 8080 8443 8000 8888 8181 4443 8880 10443 5000 5001 9000 9443 7000 7001 7443 9090)
+
+	for port2 in "${ports[@]}"; do 
+		if [ "$port2" = "$port" ]; then
+
+				case "$port" in
+			80)
+				echo "http://${host}:80/" >> "${outpath}webtemp2"
+				;;
+			443)
+				echo "https://${host}:443/" >> "${outpath}webtemp2"
+				;;
+			*)
+				echo "http://${host}:${port}/" >> "${outpath}webtemp2"
+				echo "https://${host}:${port}/" >> "${outpath}webtemp2"
+				;;
+			esac
+		
+		fi
+	done
+
+
+
+	if [ "$service" = "http" ]; then echo "http://${host}:$port/" >> "${outpath}webtemp1"; fi
+	if [[ "$service" == *"ssl"* ]]; then echo "https://${host}:$port/" >> "${outpath}webtemp1"; fi
+	if [[ "$version" == *"Web"* ]]; then echo "http://${host}:$port/" >> "${outpath}webtemp1"; fi
+	if [[ "$version" == *"web"* ]]; then echo "http://${host}:$port/" >> "${outpath}webtemp1"; fi
+	
+	
+	
+	
+done
+
+
+##cat "${outpath}webtemp1" 2>/dev/null | sort -u > /tmp/web1.txt
+#
+#ports=(80 443 8080 8443 8000 8888 8181 4443 8880 10443 5000 5001 9000 9443 7000 7001 7443 9090)
+#
+#for port2 in "${ports[@]}"; do 
+#	if [ "$port2" = "$port" ]; then
+#
+#			case "$port" in
+#        80)
+#            echo "http://${host}:80/" >> "${outpath}webtemp2"
+#            ;;
+#        443)
+#            echo "https://${host}:443/" >> "${outpath}webtemp2"
+#            ;;
+#        *)
+#            echo "http://${host}:${port}/" >> "${outpath}webtemp2"
+#            echo "https://${host}:${port}/" >> "${outpath}webtemp2"
+#            ;;
+#		esac
+#	
+#	fi
+#done
+
+
+#cat "${outpath}webtemp2" 2>/dev/null | sort -u > /tmp/web2.txt
+
+
+
+
+
+## Define your web interface ports
+#ports=(80 443 8080 8443 8000 8888 8181 4443 8880 10443 5000 5001 9000 9443 7000 7001 7443 9090)
+#
+## start fresh
+##rm "${outpath}$webfinalname" "${outpath}webtemp3"  > /dev/null 2>&1
+#
+## Grep through logs and extract IP and port
+#grep "Discovered open" nmap*.log 2>/dev/null | while read -r line; do
+#    # Example line: Discovered open port 8080/tcp on 10.0.0.11
+#    port=$(echo "$line" | awk '{print $4}' | cut -d/ -f1)
+#    ip=$(echo "$line" | awk '{print $6}')
+#
+#    # Validate
+#    [[ -z "$port" || -z "$ip" ]] && continue
+#
+#    # Check if port is in our web port list
+#    if [[ " ${ports[*]} " =~ " $port " ]]; then
+#        if [[ "$port" == "80" ]]; then
+#            echo "http://${ip}:80/" >> "${outpath}webtemp3"
+#        elif [[ "$port" == "443" ]]; then
+#            echo "https://${ip}:443/" >> "${outpath}webtemp3"
+#        else
+#            echo "http://${ip}:${port}/" >> "${outpath}webtemp3"
+#            echo "https://${ip}:${port}/" >> "${outpath}webtemp3"
+#        fi
+#    fi
+#done
+
+cat "${outpath}webtemp1" "${outpath}webtemp2" "${outpath}webtemp3" 2>/dev/null| sort -u > "${outpath}$outputwebfile2"
+#
+
+#rm "${outpath}$webfinalname" "${outpath}webtem* /tmp/we*.txt"  > /dev/null 2>&1
+
+# wanted to parse log but broke
+#if [ -f "${outpath}webtemp1" ] || [ -f "${outpath}webtemp3" ] || [ -f "${outpath}webtemp3" ]; then
+#	#sort -u "${outpath}webtemp2" | $sortip | sort -t'/' -k2 -V  > "${outpath}$outputwebfile2" 2>&1
+#	cat "${outpath}webtemp1" "${outpath}webtemp2" "${outpath}webtemp3" 2>/dev/null | sort -u | $sortip | sort -t'/' -k2 -V > "${outpath}$outputwebfile2" 2>&1
+#	echo "	- $outputwebfile2"
+#else
+#	echo -e "$RED	- no ports found $RESETCOL"
+#	rm "${outpath}$outputwebfile2" > /dev/null 2>&1
+#fi
+#
+
+echo "	- $outputwebfile2"
+echo ""
+##cleanup
+rm "${outpath}webtemp2" "${outpath}webtemp*" "${outpath}webtemp1" "${outpath}webtemp3" "$tempfile"  > /dev/null 2>&1
+
 }
 
 function ssl () {
@@ -712,6 +911,22 @@ fi
 #end
 }
 
+function summay-log {
+echo -e "\e[1m\e[93m[>]\e[0m Summary log"
+
+cat *.log | grep Discover | grep -oE '\b([0-9]{1,3}\.){3}[0-9]{1,3}\b' | sort -u > $ >  "${outpath}/hostslog.txt"
+
+while read -r ip; do
+    grep "$ip" *.log | grep "Disco" | awk -v ip="$ip" '{print ip ":" $4}' >> "${outpath}/summarytemp.txt"
+done < "${outpath}/hostslog.txt"
+cat "${outpath}/summarytemp.txt" | sort -u > "${outpath}/summary.log"
+ echo "	- summary.log"
+echo ""
+#cat "${outpath}/summary.log"
+rm -rf "${outpath}/hostslog.txt" "${outpath}/summarytemp.txt" 2>/dev/null >/dev/null
+}
+
+
 
 ########################
 # MAIN 
@@ -738,6 +953,10 @@ for word in $(echo $*); do
 	fi
 	if [ $word == "--summary" ]; then
 		men_summary="Y"
+		switch+="$word"
+	fi
+	if [ $word == "--summarylog" ]; then
+		men_summarylog="Y"
 		switch+="$word"
 	fi
 	if [ $word == "--unique" ]; then
@@ -808,6 +1027,7 @@ for word in $(echo $*); do
 		men_web="Y"
 		men_hostports="Y"
 		men_closed="Y"
+		men_summarylog="Y"
 		
 		#exclude
 		men_report1="N"
@@ -863,18 +1083,20 @@ if [ "$men_csv" == "Y" ]; then makecsv; fi
 if [ "$men_summary" == "Y" ]; then summary; fi
 # rest
 if [ "$men_ipport" == "Y" ]; then ipport; fi
-if [ "$men_uports" == "Y" ]; then uniqueports; fi
-if [ "$men_tcpports" == "Y" ]; then	tcpports; fi
+if [ "$men_uports" == "Y" ]; then uniqueports;udpports-extra; fi
+if [ "$men_tcpports" == "Y" ]; then	tcpports; tcpports-extra; fi
 if [ "$men_udpports" == "Y" ]; then	udpports; fi
 if [ "$men_uphosts" == "Y" ]; then uphosts; fi
 if [ "$men_downhosts" == "Y" ]; then downhosts; fi
 if [ "$men_smb" == "Y" ]; then smb; fi
-if [ "$men_web" == "Y" ]; then web; fi
+if [ "$men_web" == "Y" ]; then web;webdirty; fi
+#if [ "$men_web" == "Y" ]; then webdirty; fi
 if [ "$men_ssl" == "Y" ]; then ssl; fi
 if [ "$men_hostports" == "Y" ]; then hostports; fi
 if [ "$men_closed" == "Y" ]; then closedsummary; fi
 if [ "$men_report1" == "Y" ]; then report1; fi
 if [ "$men_htmlreport" == "Y" ]; then htmlreport; fi
+if [ "$men_summarylog" == "Y" ]; then summay-log; fi
 
 
 
